@@ -1,8 +1,8 @@
 declare module 'papaparse' {
   export interface ParseResult<T> {
     data: T[]
-    errors: any[]
-    meta: any
+    errors: unknown[]
+    meta: unknown
   }
 
   export interface ParseConfig<T> {
@@ -19,8 +19,8 @@ declare module 'papaparse' {
     download?: boolean
     worker?: boolean
     complete?: (results: ParseResult<T>) => void
-    error?: (error: any) => void
-    step?: (results: ParseResult<T>, parser: any) => void
+    error?: (error: unknown) => void
+    step?: (results: ParseResult<T>, parser: unknown) => void
   }
 
   export function parse<T>(input: File | string, config?: ParseConfig<T>): void

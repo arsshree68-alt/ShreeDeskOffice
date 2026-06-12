@@ -2,13 +2,23 @@ import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 
 export const supportedExcelExtensions = ['xlsx', 'xlsm', 'xlsb', 'xls']
-export const supportedCsvExtensions = ['csv']
+export const supportedCsvExtensions = ['csv', 'tsv']
 export const supportedFileExtensions = [...supportedExcelExtensions, ...supportedCsvExtensions]
 
 export const getFileExtension = (file: File) => file.name.split('.').pop()?.toLowerCase() ?? ''
 export const getFileBaseName = (file: File) => file.name.replace(/\.[^/.]+$/, '')
 
-export const normalizeRow = (row: any[]) =>
+export const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** index
+
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`
+}
+
+export const normalizeRow = (row: unknown[]) =>
   row.map((cell) => (cell === undefined || cell === null ? '' : String(cell).trim()))
 
 export const readFileAsText = (file: File) =>
@@ -30,9 +40,9 @@ export const readFileAsArrayBuffer = (file: File) =>
 export const readWorkbookFromFile = async (file: File): Promise<XLSX.WorkBook> => {
   const ext = getFileExtension(file)
 
-  if (ext === 'csv') {
+  if (supportedCsvExtensions.includes(ext)) {
     const content = await readFileAsText(file)
-    return XLSX.read(content, { type: 'string' })
+    return XLSX.read(content, { type: 'string', FS: ext === 'tsv' ? '\t' : ',' })
   }
 
   const data = await readFileAsArrayBuffer(file)
@@ -41,21 +51,44 @@ export const readWorkbookFromFile = async (file: File): Promise<XLSX.WorkBook> =
 
 export const parseWorksheetRows = (sheet: XLSX.WorkSheet) =>
   XLSX.utils
-    .sheet_to_json<string[]>(sheet, { header: 1, raw: false })
+    .sheet_to_json<unknown[]>(sheet, { header: 1, raw: false })
     .map((row) => normalizeRow(row))
     .filter((row) => row.some((cell) => cell !== ''))
 
-export const parseCsvRows = async (file: File) =>
-  new Promise<string[][]>((resolve, reject) => {
+export const parseCsvRows = async (file: File) => {
+  const ext = getFileExtension(file)
+  const delimiter = ext === 'tsv' ? '\t' : undefined
+
+  return new Promise<string[][]>((resolve, reject) => {
     Papa.parse<string[]>(file, {
+      delimiter,
       skipEmptyLines: true,
-      complete: (result: any) => {
-        const rows = result.data.map((row: any) => normalizeRow(row))
+      complete: (result) => {
+        const rows = result.data.map((row) => normalizeRow(row))
         resolve(rows)
       },
-      error: (error: any) => reject(error),
+      error: (error) => reject(error),
     })
   })
+}
+
+export const getHeaderRowIndex = (rows: string[][]) => {
+  if (rows.length === 0) return -1
+
+  let bestIndex = 0
+  let bestScore = -1
+  rows.slice(0, 25).forEach((row, index) => {
+    const nonEmptyCells = row.filter((cell) => cell !== '').length
+    const uniqueCells = new Set(row.filter((cell) => cell !== '').map((cell) => cell.toLowerCase())).size
+    const score = nonEmptyCells + uniqueCells
+    if (score > bestScore) {
+      bestScore = score
+      bestIndex = index
+    }
+  })
+
+  return bestIndex
+}
 
 export const downloadBlob = (blob: Blob, fileName: string) => {
   const url = window.URL.createObjectURL(blob)
