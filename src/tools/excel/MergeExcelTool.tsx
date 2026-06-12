@@ -45,6 +45,7 @@ const MergeExcelTool = () => {
   const [headerRow, setHeaderRow] = useState<string[]>([])
   const [mergedRows, setMergedRows] = useState<string[][]>([])
   const [feedback, setFeedback] = useState('Upload one or more spreadsheet files to begin merging.')
+  const [processing, setProcessing] = useState(false)
 
   const previewRows = useMemo(
     () => mergedRows.slice(0, 100),
@@ -52,6 +53,8 @@ const MergeExcelTool = () => {
   )
 
   const handleFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setProcessing(true)
+    setFeedback('Reading uploaded files and merging datasets...')
     const fileList = event.target.files
     if (!fileList?.length) {
       return
@@ -110,6 +113,8 @@ const MergeExcelTool = () => {
     } catch (error) {
       console.error(error)
       setFeedback('An error occurred while reading the files. Please check your files and try again.')
+    } finally {
+      setProcessing(false)
     }
   }
 
@@ -163,11 +168,17 @@ const MergeExcelTool = () => {
             accept=".xlsx,.xlsm,.xlsb,.xls,.csv"
             multiple
             onChange={handleFiles}
+            disabled={processing}
           />
         </label>
 
-        <button type="button" className="btn-primary" onClick={handleExport}>
-          Export Merged XLSX
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleExport}
+          disabled={processing || mergedRows.length === 0}
+        >
+          {processing ? 'Merging...' : 'Export Merged XLSX'}
         </button>
       </div>
 
