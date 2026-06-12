@@ -8,7 +8,7 @@ export const supportedFileExtensions = [...supportedExcelExtensions, ...supporte
 export const getFileExtension = (file: File) => file.name.split('.').pop()?.toLowerCase() ?? ''
 export const getFileBaseName = (file: File) => file.name.replace(/\.[^/.]+$/, '')
 
-export const normalizeRow = (row: any[]) =>
+export const normalizeRow = (row: unknown[]) =>
   row.map((cell) => (cell === undefined || cell === null ? '' : String(cell).trim()))
 
 export const readFileAsText = (file: File) =>
@@ -49,11 +49,11 @@ export const parseCsvRows = async (file: File) =>
   new Promise<string[][]>((resolve, reject) => {
     Papa.parse<string[]>(file, {
       skipEmptyLines: true,
-      complete: (result: any) => {
-        const rows = result.data.map((row: any) => normalizeRow(row))
+      complete: (result) => {
+        const rows = result.data.map((row) => normalizeRow(row))
         resolve(rows)
       },
-      error: (error: any) => reject(error),
+      error: (error) => reject(error),
     })
   })
 

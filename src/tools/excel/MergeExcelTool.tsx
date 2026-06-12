@@ -35,7 +35,7 @@ const readWorkbook = (file: File): Promise<XLSX.WorkBook> => {
   })
 }
 
-const normalizeRow = (row: any[]) =>
+const normalizeRow = (row: unknown[]) =>
   row.map((cell) => (cell === undefined || cell === null ? '' : String(cell).trim()))
 
 const MergeExcelTool = () => {
