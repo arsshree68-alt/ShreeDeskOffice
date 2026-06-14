@@ -6,6 +6,7 @@ import type { PdfProgress } from '../../tools/pdf/engine/types'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
 import * as pdfjsLib from 'pdfjs-dist'
 import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -78,15 +79,71 @@ const WordToolWorkspace = () => {
     }
   }
 
-  // --- Word to PDF Simulation ---
+  // --- Word to PDF client-side conversion ---
   const handleWordToPdf = async () => {
     if (wordFiles.length === 0) return setFeedback('Please select a file first.')
     setProcessing(true)
-    setProgress({ label: 'Converting document structure...', value: 40 })
+    setProgress({ label: 'Reading document layers...', value: 20 })
 
-    setTimeout(async () => {
-      const dummyContent = 'SHREEDESK WORD TO PDF CONVERTED DOCUMENT\n'
-      const blob = new Blob([dummyContent], { type: 'application/pdf' })
+    try {
+      const paragraphs = await extractDocxParagraphs(wordFiles[0])
+      setProgress({ label: 'Generating PDF document structure...', value: 50 })
+      
+      const pdfDoc = await PDFDocument.create()
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+      
+      let page = pdfDoc.addPage([595.276, 841.890]) // A4 Size in points
+      const { width, height } = page.getSize()
+      const fontSize = 11
+      let y = height - 50 // Top margin
+      
+      // Draw document title header
+      page.drawText(`ShreeDeskOffice Converted Document: ${wordFiles[0].name}`, {
+        x: 50,
+        y: y,
+        size: 9,
+        font: font,
+        color: rgb(0.5, 0.5, 0.5)
+      })
+      y -= 30
+
+      for (const para of paragraphs) {
+        if (!para.trim()) continue
+        if (y < 60) {
+          page = pdfDoc.addPage([595.276, 841.890])
+          y = height - 50
+        }
+
+        // Wrap lines
+        const words = para.split(/\s+/)
+        let currentLine = ''
+
+        for (const word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word
+          const testWidth = font.widthOfTextAtSize(testLine, fontSize)
+          if (testWidth > width - 100) {
+            page.drawText(currentLine, { x: 50, y, size: fontSize, font })
+            y -= 16
+            currentLine = word
+            if (y < 60) {
+              page = pdfDoc.addPage([595.276, 841.890])
+              y = height - 50
+            }
+          } else {
+            currentLine = testLine
+          }
+        }
+
+        if (currentLine) {
+          page.drawText(currentLine, { x: 50, y, size: fontSize, font })
+          y -= 22 // space between paragraphs
+        }
+      }
+
+      setProgress({ label: 'Finalizing PDF byte-streams...', value: 85 })
+      const pdfBytes = await pdfDoc.save()
+      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -104,10 +161,14 @@ const WordToolWorkspace = () => {
       }
 
       setFeedback(`Successfully converted Word document to PDF: ${outputName}`)
+      addRecentFile(outputName, 'Converted', wordFiles[0].size, 0, '/word')
+    } catch (err) {
+      console.error(err)
+      setFeedback('Error performing client-side DOCX to PDF conversion.')
+    } finally {
       setProcessing(false)
       setProgress(null)
-      addRecentFile(outputName, 'Converted', wordFiles[0].size, 0, '/word')
-    }, 1500)
+    }
   }
 
   // --- PDF to Word client-side conversion ---

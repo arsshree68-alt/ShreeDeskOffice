@@ -103,6 +103,14 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
       return
     }
 
+    if (tool.mode === 'excel') {
+      setImageFiles(files)
+      setPdfInfos([])
+      setProgress({ label: 'Spreadsheet ready', value: 100 })
+      setFeedback(`${files.length} spreadsheet file${files.length === 1 ? '' : 's'} ready for PDF conversion.`)
+      return
+    }
+
     try {
       const infos: PdfFileInfo[] = []
       for (const [index, file] of files.entries()) {
@@ -146,6 +154,10 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
         if (imageFiles.length === 0) throw new Error('Upload at least one JPG or PNG image.')
         const engine = await import('../../tools/pdf/engine/pdfEngine')
         result = await engine.imagesToPdf(imageFiles, setProgress)
+      } else if (tool.id === 'excelToPdf') {
+        if (imageFiles.length === 0) throw new Error('Upload an Excel workbook first.')
+        const engine = await import('../../tools/pdf/engine/pdfEngine')
+        result = await engine.convertExcelToPdf(imageFiles[0], setProgress)
       } else {
         if (!primaryPdf) throw new Error('Upload a PDF file first.')
 
@@ -261,6 +273,9 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
         } else if (tool.id === 'extractText') {
           const engine = await import('../../tools/pdf/engine/pdfEngine')
           result = await engine.extractTextFromPdf(primaryPdf.file, setProgress)
+        } else if (tool.id === 'pdfToExcel') {
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.convertPdfToExcel(primaryPdf.file, setProgress)
         } else {
           const engine = await import('../../tools/pdf/engine/pdfEngine')
           result = await engine.pdfToImages(primaryPdf.file, pdfToImageFormat, pdfToImageQuality, setProgress)
@@ -286,7 +301,8 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
       if (token) {
         let driveCat: any = 'PDFs'
         if (tool.id === 'merge') driveCat = 'Merged Files'
-        else if (tool.id === 'split' || tool.id === 'pdfToImage' || tool.id === 'extractImages' || tool.id === 'extractText') driveCat = 'Converted Files'
+        else if (tool.id === 'pdfToExcel') driveCat = 'Excel Files'
+        else if (tool.id === 'split' || tool.id === 'pdfToImage' || tool.id === 'extractImages' || tool.id === 'extractText' || tool.id === 'excelToPdf') driveCat = 'Converted Files'
         await uploadFileToDrive(driveCat, outputFileName || result.fileName, result.blob)
       }
 
@@ -361,12 +377,12 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1F1B16' }}>Document Preview</h3>
                 <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 500, fontSize: '0.85rem', border: '1px solid #E4E0D9' }}>
-                  <input type="file" multiple={tool.acceptsMultiple} accept={tool.mode === 'image' ? 'image/png,image/jpeg,image/webp' : 'application/pdf'} style={{ display: 'none' }} onChange={(e) => {
+                  <input type="file" multiple={tool.acceptsMultiple} accept={tool.mode === 'image' ? 'image/png,image/jpeg,image/webp' : tool.mode === 'excel' ? '.xlsx,.xls,.csv' : 'application/pdf'} style={{ display: 'none' }} onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       handleFilesSelected(Array.from(e.target.files))
                     }
                   }} />
-                  <span>+ Add {tool.mode === 'image' ? 'Images' : 'PDF'}</span>
+                  <span>+ Add {tool.mode === 'image' ? 'Images' : tool.mode === 'excel' ? 'Spreadsheet' : 'PDF'}</span>
                 </label>
               </div>
               
@@ -393,110 +409,134 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                 </div>
               )}
 
-              <PdfPagePreview
-                files={pdfInfos}
-                selectedPages={selectedPages}
-                pageOrders={pageOrders}
-                pageRotations={pageRotations}
-                onTogglePage={(fileId, pageNumber) => {
-                  setSelectedPages((prev) => {
-                    const existing = new Set(prev[fileId] ?? [])
-                    if (existing.has(pageNumber)) {
-                      existing.delete(pageNumber)
-                    } else {
-                      existing.add(pageNumber)
-                    }
-                    return { ...prev, [fileId]: Array.from(existing).sort((a, b) => a - b) }
-                  })
-                }}
-                onRotatePage={(fileId, pageNumber) => {
-                  setPageRotations((prev) => {
-                    const fileRotations = { ...(prev[fileId] ?? {}) }
-                    const current = fileRotations[pageNumber] ?? 0
-                    const next = (current + 90) % 360
-                    if (next === 0) {
-                      delete fileRotations[pageNumber]
-                    } else {
-                      fileRotations[pageNumber] = next
-                    }
-                    return { ...prev, [fileId]: fileRotations }
-                  })
-                }}
-                onMoveFile={(fileId, direction) => {
-                  setPdfInfos((prev) => {
-                    const index = prev.findIndex((f) => f.id === fileId)
-                    if (index === -1) return prev
-                    const newArr = prev.slice()
-                    const swapWith = direction === 'up' ? index - 1 : index + 1
-                    if (swapWith < 0 || swapWith >= newArr.length) return prev
-                    const tmp = newArr[swapWith]
-                    newArr[swapWith] = newArr[index]
-                    newArr[index] = tmp
-                    return newArr
-                  })
-                }}
-                onReorderFiles={(draggedId, targetId) => {
-                  setPdfInfos((prev) => {
-                    const from = prev.findIndex((f) => f.id === draggedId)
-                    const to = prev.findIndex((f) => f.id === targetId)
-                    if (from === -1 || to === -1) return prev
-                    const copy = prev.slice()
-                    const [item] = copy.splice(from, 1)
-                    copy.splice(to, 0, item)
-                    return copy
-                  })
-                }}
-                onRemoveFile={(fileId) => {
-                  setPdfInfos((prev) => prev.filter((f) => f.id !== fileId))
-                  setSelectedPages((prev) => {
-                    const copy = { ...prev }
-                    delete copy[fileId]
-                    return copy
-                  })
-                }}
-                onReorderPages={(fileId, fromIndex, toIndex) => {
-                  setPageOrders((prev) => {
-                    const copy = { ...prev }
-                    const order = copy[fileId] ? copy[fileId].slice() : []
-                    if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return prev
-                    const [item] = order.splice(fromIndex, 1)
-                    order.splice(toIndex, 0, item)
-                    copy[fileId] = order
-                    return copy
-                  })
-                }}
-                onDuplicatePage={(fileId, pageIndex) => {
-                  setPageOrders((prev) => {
-                    const copy = { ...prev }
-                    const order = copy[fileId] ? copy[fileId].slice() : []
-                    if (pageIndex < 0 || pageIndex >= order.length) return prev
-                    const item = order[pageIndex]
-                    order.splice(pageIndex + 1, 0, item)
-                    copy[fileId] = order
-                    return copy
-                  })
-                }}
-                onInsertBlankPage={(fileId, afterIndex) => {
-                  setPageOrders((prev) => {
-                    const copy = { ...prev }
-                    const order = copy[fileId] ? copy[fileId].slice() : []
-                    const insertAt = Math.min(order.length, Math.max(0, afterIndex + 1))
-                    order.splice(insertAt, 0, -1)
-                    copy[fileId] = order
-                    return copy
-                  })
-                }}
-                onDeletePage={(fileId, pageIndex) => {
-                  setPageOrders((prev) => {
-                    const copy = { ...prev }
-                    const order = copy[fileId] ? copy[fileId].slice() : []
-                    if (pageIndex < 0 || pageIndex >= order.length) return prev
-                    order.splice(pageIndex, 1)
-                    copy[fileId] = order
-                    return copy
-                  })
-                }}
-              />
+              {tool.mode === 'excel' && imageFiles.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="pdf-preview-summary" style={{ display: 'flex', gap: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <span className="summary-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Workbook</span>
+                      <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--text)' }}>{imageFiles[0].name}</strong>
+                    </div>
+                    <div>
+                      <span className="summary-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Size</span>
+                      <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--text)' }}>{formatFileSize(imageFiles[0].size)}</strong>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }}>
+                    <span style={{ fontSize: '2rem' }}>📊</span>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text)' }}>{imageFiles[0].name}</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Spreadsheet Loaded & Ready for PDF Conversion</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tool.mode === 'pdf' && (
+                <PdfPagePreview
+                  files={pdfInfos}
+                  selectedPages={selectedPages}
+                  pageOrders={pageOrders}
+                  pageRotations={pageRotations}
+                  onTogglePage={(fileId, pageNumber) => {
+                    setSelectedPages((prev) => {
+                      const existing = new Set(prev[fileId] ?? [])
+                      if (existing.has(pageNumber)) {
+                        existing.delete(pageNumber)
+                      } else {
+                        existing.add(pageNumber)
+                      }
+                      return { ...prev, [fileId]: Array.from(existing).sort((a, b) => a - b) }
+                    })
+                  }}
+                  onRotatePage={(fileId, pageNumber) => {
+                    setPageRotations((prev) => {
+                      const fileRotations = { ...(prev[fileId] ?? {}) }
+                      const current = fileRotations[pageNumber] ?? 0
+                      const next = (current + 90) % 360
+                      if (next === 0) {
+                        delete fileRotations[pageNumber]
+                      } else {
+                        fileRotations[pageNumber] = next
+                      }
+                      return { ...prev, [fileId]: fileRotations }
+                    })
+                  }}
+                  onMoveFile={(fileId, direction) => {
+                    setPdfInfos((prev) => {
+                      const index = prev.findIndex((f) => f.id === fileId)
+                      if (index === -1) return prev
+                      const newArr = prev.slice()
+                      const swapWith = direction === 'up' ? index - 1 : index + 1
+                      if (swapWith < 0 || swapWith >= newArr.length) return prev
+                      const tmp = newArr[swapWith]
+                      newArr[swapWith] = newArr[index]
+                      newArr[index] = tmp
+                      return newArr
+                    })
+                  }}
+                  onReorderFiles={(draggedId, targetId) => {
+                    setPdfInfos((prev) => {
+                      const from = prev.findIndex((f) => f.id === draggedId)
+                      const to = prev.findIndex((f) => f.id === targetId)
+                      if (from === -1 || to === -1) return prev
+                      const copy = prev.slice()
+                      const [item] = copy.splice(from, 1)
+                      copy.splice(to, 0, item)
+                      return copy
+                    })
+                  }}
+                  onRemoveFile={(fileId) => {
+                    setPdfInfos((prev) => prev.filter((f) => f.id !== fileId))
+                    setSelectedPages((prev) => {
+                      const copy = { ...prev }
+                      delete copy[fileId]
+                      return copy
+                    })
+                  }}
+                  onReorderPages={(fileId, fromIndex, toIndex) => {
+                    setPageOrders((prev) => {
+                      const copy = { ...prev }
+                      const order = copy[fileId] ? copy[fileId].slice() : []
+                      if (fromIndex < 0 || toIndex < 0 || fromIndex >= order.length || toIndex >= order.length) return prev
+                      const [item] = order.splice(fromIndex, 1)
+                      order.splice(toIndex, 0, item)
+                      copy[fileId] = order
+                      return copy
+                    })
+                  }}
+                  onDuplicatePage={(fileId, pageIndex) => {
+                    setPageOrders((prev) => {
+                      const copy = { ...prev }
+                      const order = copy[fileId] ? copy[fileId].slice() : []
+                      if (pageIndex < 0 || pageIndex >= order.length) return prev
+                      const item = order[pageIndex]
+                      order.splice(pageIndex + 1, 0, item)
+                      copy[fileId] = order
+                      return copy
+                    })
+                  }}
+                  onInsertBlankPage={(fileId, afterIndex) => {
+                    setPageOrders((prev) => {
+                      const copy = { ...prev }
+                      const order = copy[fileId] ? copy[fileId].slice() : []
+                      const insertAt = Math.min(order.length, Math.max(0, afterIndex + 1))
+                      order.splice(insertAt, 0, -1)
+                      copy[fileId] = order
+                      return copy
+                    })
+                  }}
+                  onDeletePage={(fileId, pageIndex) => {
+                    setPageOrders((prev) => {
+                      const copy = { ...prev }
+                      const order = copy[fileId] ? copy[fileId].slice() : []
+                      if (pageIndex < 0 || pageIndex >= order.length) return prev
+                      order.splice(pageIndex, 1)
+                      copy[fileId] = order
+                      return copy
+                    })
+                  }}
+                />
+              )}
             </div>
 
             {/* Right: Actions & Settings */}

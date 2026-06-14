@@ -11,17 +11,23 @@ interface PdfFileDropzoneProps {
 const acceptedTypes: Record<PdfToolMode, string> = {
   pdf: '.pdf,application/pdf',
   image: '.jpg,.jpeg,.png,image/jpeg,image/png',
+  excel: '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',
 }
 
 const isAcceptedFile = (file: File, mode: PdfToolMode) => {
   if (mode === 'pdf') return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  if (mode === 'excel') return ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'].includes(file.type) || /\.(xlsx|xls|csv)$/i.test(file.name)
   return ['image/jpeg', 'image/png'].includes(file.type) || /\.(jpe?g|png)$/i.test(file.name)
 }
 
 const PdfFileDropzone = ({ mode, multiple, disabled = false, onFilesSelected }: PdfFileDropzoneProps) => {
   const [dragging, setDragging] = useState(false)
   const helperText = useMemo(
-    () => mode === 'pdf' ? 'Drop PDF files here or browse from your device.' : 'Drop JPG/PNG images here or browse from your device.',
+    () => {
+      if (mode === 'pdf') return 'Drop PDF files here or browse from your device.'
+      if (mode === 'excel') return 'Drop spreadsheet files (XLSX, XLS, CSV) here or browse from your device.'
+      return 'Drop JPG/PNG images here or browse from your device.'
+    },
     [mode],
   )
 

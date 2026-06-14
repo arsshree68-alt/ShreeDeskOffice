@@ -4,6 +4,7 @@ import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 import type { PdfProgress } from '../../tools/pdf/engine/types'
 import { analyzePresentation, type PptAnalysis } from '../../tools/ppt/presentationAnalyzer'
 import { extractImages, downloadExtractedImages, type PptImage } from '../../tools/ppt/slideExporter'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 
 type TabType = 'to-pdf' | 'analyze' | 'export-images'
 
@@ -47,7 +48,62 @@ const PptToolWorkspace = () => {
           const blob = await resp.blob()
           outputs.push({ fileName: 'ShreeDesk_' + file.name.replace(/\.[^/.]+$/, '') + '.pdf', blob })
         } else {
-          throw new Error('PPT→PDF conversion requires a server-side converter. Configure __SHREEDESK_PPT_CONVERTER_URL to enable.')
+          // Client-side fallback: parse slide texts and generate formatted PDF slides
+          const analysis = await analyzePresentation(file)
+          const pdfDoc = await PDFDocument.create()
+          const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+          
+          for (let sIdx = 0; sIdx < analysis.textBySlide.length; sIdx++) {
+            // A4 landscape size in points: 841.890 x 595.276 (since presentations are wide)
+            const page = pdfDoc.addPage([841.890, 595.276])
+            const { width, height } = page.getSize()
+            
+            // Draw background outline
+            page.drawRectangle({
+              x: 20,
+              y: 20,
+              width: width - 40,
+              height: height - 40,
+              borderColor: rgb(0.55, 0.36, 0.96),
+              borderWidth: 1.5,
+            })
+            
+            // Draw slide header title
+            page.drawText(`SLIDE ${sIdx + 1} OF ${analysis.slideCount} — ${file.name}`, {
+              x: 50,
+              y: height - 60,
+              size: 11,
+              font: font,
+              color: rgb(0.5, 0.5, 0.5)
+            })
+            
+            const slideText = analysis.textBySlide[sIdx] || '(No text content)'
+            // Split slide text into lines
+            const words = slideText.split(/\s+/)
+            let currentLine = ''
+            let y = height - 120
+            const fontSize = 14
+            
+            for (const word of words) {
+              const testLine = currentLine ? `${currentLine} ${word}` : word
+              const testWidth = font.widthOfTextAtSize(testLine, fontSize)
+              if (testWidth > width - 120) {
+                page.drawText(currentLine, { x: 60, y, size: fontSize, font })
+                y -= 22
+                currentLine = word
+                if (y < 60) break // Cap slide content to fit page
+              } else {
+                currentLine = testLine
+              }
+            }
+            if (currentLine && y >= 60) {
+              page.drawText(currentLine, { x: 60, y, size: fontSize, font })
+            }
+          }
+          
+          const pdfBytes = await pdfDoc.save()
+          const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+          outputs.push({ fileName: 'ShreeDesk_' + file.name.replace(/\.[^/.]+$/, '') + '.pdf', blob })
         }
       }
 

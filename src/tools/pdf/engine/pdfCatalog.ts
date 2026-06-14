@@ -154,4 +154,22 @@ export const pdfTools: PdfToolDefinition[] = [
     acceptsMultiple: false,
     outputLabel: 'extracted-text.txt',
   },
+  {
+    id: 'excelToPdf',
+    title: 'Excel to PDF',
+    description: 'Convert XLS/XLSX workbooks to structured PDF tables.',
+    icon: '📊',
+    mode: 'excel',
+    acceptsMultiple: false,
+    outputLabel: 'excel-converted.pdf',
+  },
+  {
+    id: 'pdfToExcel',
+    title: 'PDF to Excel',
+    description: 'Extract tables and textual layouts from a PDF to an XLSX workbook.',
+    icon: '📈',
+    mode: 'pdf',
+    acceptsMultiple: false,
+    outputLabel: 'pdf-converted.xlsx',
+  },
 ]

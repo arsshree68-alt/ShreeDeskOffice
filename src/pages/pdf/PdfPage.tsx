@@ -28,6 +28,8 @@ const PDF_TOOLS: PdfToolEntry[] = [
   { id: 'unlock',      title: 'Unlock PDF',   description: 'Decrypt password security from a protected PDF.', icon: '🔓', route: '/pdf/unlock' },
   { id: 'extract-images', title: 'Extract Images', description: 'Pull all embedded image assets into a ZIP.', icon: '🖼️', route: '/pdf/extract-images' },
   { id: 'extract-text',   title: 'Extract Text',   description: 'Scrape readable text characters from all pages.', icon: '📝', route: '/pdf/extract-text' },
+  { id: 'excel-to-pdf',   title: 'Excel to PDF',   description: 'Convert XLS/XLSX workbooks to structured PDF tables.', icon: '📊', route: '/pdf/excel-to-pdf' },
+  { id: 'pdf-to-excel',   title: 'PDF to Excel',   description: 'Extract tables and textual layouts from a PDF to an XLSX workbook.', icon: '📈', route: '/pdf/pdf-to-excel' },
 ]
 
 const PdfPage = () => {

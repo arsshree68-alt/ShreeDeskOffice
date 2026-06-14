@@ -9,6 +9,8 @@ const getToolIdFromParam = (param: string) => {
   if (param === 'word-to-pdf') return 'wordToPdf'
   if (param === 'extract-images') return 'extractImages'
   if (param === 'extract-text') return 'extractText'
+  if (param === 'excel-to-pdf') return 'excelToPdf'
+  if (param === 'pdf-to-excel') return 'pdfToExcel'
   return param
 }
 

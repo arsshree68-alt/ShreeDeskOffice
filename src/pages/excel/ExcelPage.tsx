@@ -17,6 +17,8 @@ const EXCEL_TOOLS: ExcelToolEntry[] = [
   { id: 'xlsxToCsv', title: 'XLSX → CSV',          description: 'Export Excel sheets as UTF-8 CSV files.', icon: '📋', route: '/excel/xlsx-to-csv' },
   { id: 'frequency', title: 'Frequency Table',      description: 'Generate frequency distributions for any categorical column.', icon: '📊', route: '/excel/frequency' },
   { id: 'crosstab',  title: 'Crosstab Generator',   description: 'Build cross-tabulation matrices for two categorical variables.', icon: '🔲', route: '/excel/crosstab' },
+  { id: 'excelToPdf', title: 'Excel to PDF',        description: 'Convert XLS/XLSX workbooks to structured PDF tables.', icon: '📊', route: '/pdf/excel-to-pdf' },
+  { id: 'pdfToExcel', title: 'PDF to Excel',        description: 'Extract tables and textual layouts from a PDF to an XLSX workbook.', icon: '📈', route: '/pdf/pdf-to-excel' },
 ]
 
 const ExcelPage = () => {

@@ -16,8 +16,10 @@ export type PdfToolId =
   | 'unlock'
   | 'extractImages'
   | 'extractText'
+  | 'excelToPdf'
+  | 'pdfToExcel'
 
-export type PdfToolMode = 'pdf' | 'image'
+export type PdfToolMode = 'pdf' | 'image' | 'excel'
 
 export interface PdfPageThumbnail {
   pageNumber: number

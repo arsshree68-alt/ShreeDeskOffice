@@ -6,6 +6,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api'
 import type { PdfFileInfo, PdfOutput, PdfPageThumbnail, PdfProgress } from './types'
 import { createFileId, getBaseName } from './fileUtils'
+import * as XLSX from 'xlsx'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -777,5 +778,137 @@ export const extractTextFromPdf = async (
   document.cleanup()
   const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' })
   return { blob, fileName: 'ShreeDesk_Extracted_Text.txt' }
+}
+
+export const convertExcelToPdf = async (
+  file: File,
+  onProgress: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress({ label: 'Reading Excel sheet data...', value: 20 })
+  const arrayBuffer = await file.arrayBuffer()
+  const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' })
+  
+  onProgress({ label: 'Generating PDF sheets...', value: 50 })
+  const pdfDoc = await PDFDocument.create()
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  
+  const fontSize = 9
+  const rowHeight = 16
+  const margin = 40
+  
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName]
+    const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, raw: false })
+    if (rows.length === 0) continue
+    
+    let page = pdfDoc.addPage([595.276, 841.890]) // A4 Size
+    const { width, height } = page.getSize()
+    let y = height - margin
+    
+    // Draw sheet title
+    page.drawText(`Sheet: ${sheetName}`, { x: margin, y, size: 12, font: fontBold, color: rgb(0.12, 0.45, 0.22) })
+    y -= 24
+    
+    for (let rIdx = 0; rIdx < rows.length; rIdx++) {
+      const row = rows[rIdx] as any[]
+      if (y < margin + 40) {
+        page = pdfDoc.addPage([595.276, 841.890])
+        y = height - margin
+      }
+      
+      let x = margin
+      const colWidth = (width - margin * 2) / Math.max(5, row.length)
+      
+      for (let cIdx = 0; cIdx < row.length; cIdx++) {
+        const val = String(row[cIdx] ?? '')
+        if (x + colWidth > width - margin) break
+        
+        page.drawText(val.substring(0, 15), {
+          x: x,
+          y: y,
+          size: fontSize,
+          font: rIdx === 0 ? fontBold : font,
+          color: rIdx === 0 ? rgb(0.1, 0.1, 0.1) : rgb(0.25, 0.25, 0.25)
+        })
+        
+        page.drawRectangle({
+          x: x - 4,
+          y: y - 4,
+          width: colWidth,
+          height: rowHeight,
+          borderColor: rgb(0.85, 0.85, 0.85),
+          borderWidth: 0.5
+        })
+        
+        x += colWidth
+      }
+      y -= rowHeight
+    }
+  }
+  
+  onProgress({ label: 'Finalizing PDF output...', value: 90 })
+  const pdfBytes = await pdfDoc.save()
+  const name = getBaseName(file.name) + '_converted.pdf'
+  return {
+    fileName: name,
+    blob: new Blob([pdfBytes as any], { type: 'application/pdf' })
+  }
+}
+
+export const convertPdfToExcel = async (
+  file: File,
+  onProgress: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress({ label: 'Loading PDF document...', value: 20 })
+  const typedarray = new Uint8Array(await file.arrayBuffer())
+  const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise
+  
+  const workbook = XLSX.utils.book_new()
+  const maxPages = Math.min(pdf.numPages, 10)
+  
+  for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+    onProgress({ label: `Parsing tables on page ${pageNum}...`, value: 20 + Math.round((pageNum / maxPages) * 60) })
+    const page = await pdf.getPage(pageNum)
+    const textContent = await page.getTextContent()
+    
+    const items = textContent.items as any[]
+    const rowMap: Record<number, any[]> = {}
+    
+    items.forEach((item) => {
+      const y = Math.round(item.transform[5] * 2) / 2
+      if (!rowMap[y]) {
+        rowMap[y] = []
+      }
+      rowMap[y].push(item)
+    })
+    
+    const sortedY = Object.keys(rowMap).map(Number).sort((a, b) => b - a)
+    const sheetData: string[][] = []
+    
+    sortedY.forEach((y) => {
+      const rowItems = rowMap[y]
+      rowItems.sort((a, b) => a.transform[4] - b.transform[4])
+      const rowText = rowItems.map((item) => item.str.trim()).filter(Boolean)
+      if (rowText.length > 0) {
+        sheetData.push(rowText)
+      }
+    })
+    
+    if (sheetData.length > 0) {
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetData)
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Page ${pageNum}`)
+    }
+  }
+  
+  onProgress({ label: 'Writing Excel workbook...', value: 90 })
+  const wopts: XLSX.WritingOptions = { bookType: 'xlsx', bookSST: false, type: 'array' }
+  const warray = XLSX.write(workbook, wopts)
+  
+  const name = getBaseName(file.name) + '_converted.xlsx'
+  return {
+    fileName: name,
+    blob: new Blob([warray as any], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  }
 }
 
