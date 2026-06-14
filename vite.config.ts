@@ -6,15 +6,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1000,
-    rolldownOptions: {
+    rollupOptions: {
       output: {
-        advancedChunks: {
-          groups: [
-            { name: 'xlsx', test: /node_modules\/xlsx/ },
-            { name: 'pdfjs', test: /node_modules\/pdfjs-dist/ },
-            { name: 'pdf-lib', test: /node_modules\/pdf-lib/ },
-            { name: 'charts', test: /node_modules\/recharts/ },
-          ],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('xlsx')) return 'xlsx';
+            if (id.includes('pdfjs-dist')) return 'pdfjs';
+            if (id.includes('pdf-lib')) return 'pdf-lib';
+            if (id.includes('recharts') || id.includes('d3')) return 'charts';
+          }
         },
       },
     },

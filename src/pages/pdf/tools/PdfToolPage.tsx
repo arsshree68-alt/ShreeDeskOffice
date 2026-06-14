@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState } from 'react'
 import ToolPageShell from '../../../components/ui/ToolPageShell'
 import PdfToolWorkspace from '../../../components/pdf/PdfToolWorkspace'
 import { pdfTools } from '../../../tools/pdf/engine/pdfCatalog'
@@ -18,6 +19,7 @@ const PdfToolPage = () => {
   const { toolId } = useParams<{ toolId: string }>()
   const resolvedId = toolId ? getToolIdFromParam(toolId) : ''
   const tool = pdfTools.find((t) => t.id === resolvedId)
+  const [activeStep, setActiveStep] = useState(1)
 
   if (!tool) {
     return (
@@ -36,8 +38,9 @@ const PdfToolPage = () => {
       suiteLabel="PDF Suite"
       suiteRoute="/pdf"
       icon={tool.icon}
+      activeStep={activeStep}
     >
-      <PdfToolWorkspace key={tool.id} tool={tool} />
+      <PdfToolWorkspace key={tool.id} tool={tool} onStepChange={setActiveStep} />
     </ToolPageShell>
   )
 }

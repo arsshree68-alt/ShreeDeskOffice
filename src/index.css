@@ -1607,6 +1607,24 @@ a {
 .tool-phase-label {
   font-weight: 500;
 }
+.tool-phase-step.active {
+  color: var(--accent);
+  font-weight: 700;
+}
+.tool-phase-step.active .tool-phase-number {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 0 10px rgba(201, 100, 66, 0.4);
+}
+.tool-phase-step.completed {
+  color: var(--success);
+  font-weight: 600;
+}
+.tool-phase-step.completed .tool-phase-number {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1.5px solid var(--success);
+}
 .tool-phase-sep {
   display: inline-block;
   width: 1.5rem;

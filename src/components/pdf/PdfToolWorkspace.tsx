@@ -3,7 +3,6 @@ import PdfFileDropzone from './PdfFileDropzone'
 import PdfPagePreview from './PdfPagePreview'
 import PdfProgressBar from './PdfProgressBar'
 import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
-import { loadPdfFileInfo } from '../../tools/pdf/engine/pdfEngine'
 import { parsePageOrder, parsePageSelection } from '../../tools/pdf/engine/pageRanges'
 import type { PdfFileInfo, PdfOutput, PdfProgress, PdfToolDefinition } from '../../tools/pdf/engine/types'
 import ResultSummaryCard from '../ui/ResultSummaryCard'
@@ -11,6 +10,7 @@ import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 
 interface PdfToolWorkspaceProps {
   tool: PdfToolDefinition
+  onStepChange?: (step: number) => void
 }
 
 const getInitialRangeHint = (toolId: PdfToolDefinition['id']) => {
@@ -21,7 +21,7 @@ const getInitialRangeHint = (toolId: PdfToolDefinition['id']) => {
   return ''
 }
 
-const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
+const PdfToolWorkspace = ({ tool, onStepChange }: PdfToolWorkspaceProps) => {
   const [pdfInfos, setPdfInfos] = useState<PdfFileInfo[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [pageInput, setPageInput] = useState('')
@@ -112,6 +112,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
     }
 
     try {
+      const { loadPdfFileInfo } = await import('../../tools/pdf/engine/pdfEngine')
       const infos: PdfFileInfo[] = []
       for (const [index, file] of files.entries()) {
         const info = await loadPdfFileInfo(file, (nextProgress) => {
@@ -328,6 +329,17 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
   const requiresPageInput = ['rotate', 'delete', 'extract', 'reorder'].includes(tool.id)
   const isReady = pdfInfos.length > 0 || imageFiles.length > 0
+
+  const currentStep = useMemo(() => {
+    if (processing) return 4
+    if (output) return 5
+    if (isReady) return 2 // Configure
+    return 1
+  }, [isReady, processing, output])
+
+  useEffect(() => {
+    onStepChange?.(currentStep)
+  }, [currentStep, onStepChange])
 
   return (
     <>

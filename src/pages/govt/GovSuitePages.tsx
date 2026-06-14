@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import ToolPageShell from '../../components/ui/ToolPageShell'
 import { FiPrinter, FiDownload, FiSave } from 'react-icons/fi'
@@ -23,6 +23,13 @@ const GovSuitePages = () => {
   const location = useLocation()
   const [activeTab, setActiveTab] = useState<GovToolTab>(() => getTabFromPath(window.location.pathname))
   const { addRecentFile } = useRecentFiles()
+
+  const [activeStep, setActiveStep] = useState(1)
+
+  // Reset active step when tab changes
+  useEffect(() => {
+    setActiveStep(1)
+  }, [activeTab])
 
   // Sync tab with path routing
   useEffect(() => {
@@ -63,6 +70,33 @@ const GovSuitePages = () => {
   // 6. Census Data Formatter
   const [censusCsv, setCensusCsv] = useState('')
   const [censusResult, setCensusResult] = useState('')
+
+  const computedActiveStep = useMemo(() => {
+    if (activeTab === 'hlb') return activeStep
+
+    if (activeTab === 'naming') {
+      return nameResult ? 5 : (nameSubjectCode ? 2 : 1)
+    }
+    if (activeTab === 'translation') {
+      return translating ? 4 : (transOutput ? 5 : (transInput ? 2 : 1))
+    }
+    if (activeTab === 'census') {
+      return censusResult ? 5 : (censusCsv ? 2 : 1)
+    }
+    if (activeTab === 'office-note') {
+      const hasContent = noteFileNo || noteSubject || noteParas.some(p => p.trim())
+      return hasContent ? 2 : 1
+    }
+    if (activeTab === 'do-letter') {
+      const hasContent = doSenderName || doRecipient || doBody
+      return hasContent ? 2 : 1
+    }
+    if (activeTab === 'rti-draft') {
+      const hasContent = rtiApplicant || rtiPio || rtiQuestions.some(q => q.trim())
+      return hasContent ? 2 : 1
+    }
+    return 1
+  }, [activeTab, activeStep, nameResult, nameSubjectCode, translating, transOutput, transInput, censusResult, censusCsv, noteFileNo, noteSubject, noteParas, doSenderName, doRecipient, doBody, rtiApplicant, rtiPio, rtiQuestions])
 
   // --- Office Note Exports ---
   const handleDownloadNote = () => {
@@ -270,6 +304,7 @@ const GovSuitePages = () => {
       suiteLabel="Workspace OS"
       suiteRoute="/"
       icon="🏛️"
+      activeStep={computedActiveStep}
     >
       <div className="workspace-grid" style={{ gridTemplateColumns: '240px 1fr', gap: '2rem' }}>
         
@@ -316,7 +351,7 @@ const GovSuitePages = () => {
 
           {/* 0. HLB Consolidator */}
           {activeTab === 'hlb' && (
-            <HlbConsolidatorTool />
+            <HlbConsolidatorTool onStepChange={setActiveStep} />
           )}
 
           {/* 1. Office Note Generator */}

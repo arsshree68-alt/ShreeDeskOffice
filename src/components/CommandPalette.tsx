@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiSearch, FiStar, FiArrowRight, FiX } from 'react-icons/fi'
@@ -34,6 +34,32 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen])
 
+  // Filter tools based on query and keywords
+  const filteredList = useMemo<ToolRegistryEntry[]>(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) {
+      // If empty query, show pinned favorites first, then rest
+      const favTools = toolRegistry.filter((t) => favorites.includes(t.id))
+      const popular = toolRegistry.filter((t) => !favorites.includes(t.id)).slice(0, 5)
+      return [...favTools, ...popular]
+    }
+
+    return toolRegistry.filter((t) => {
+      const matchTitle = t.title.toLowerCase().includes(q)
+      const matchDesc = t.description.toLowerCase().includes(q)
+      const matchCat = t.category.toLowerCase().includes(q)
+      const matchKeywords = t.keywords.some((k) => k.toLowerCase().includes(q))
+      return matchTitle || matchDesc || matchCat || matchKeywords
+    })
+  }, [query, favorites])
+
+  const handleSelect = useCallback((tool: ToolRegistryEntry) => {
+    // Save to recents (simulate file action or navigation)
+    // For now we just route to it
+    navigate(tool.route)
+    onClose()
+  }, [navigate, onClose])
+
   // Handle global key binds (Escape to close, arrows to select, Enter to run)
   useEffect(() => {
     if (!isOpen) return
@@ -58,33 +84,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, selectedIndex, query, favorites, recentFiles])
-
-  // Filter tools based on query and keywords
-  const filteredList = useMemo<ToolRegistryEntry[]>(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) {
-      // If empty query, show pinned favorites first, then rest
-      const favTools = toolRegistry.filter((t) => favorites.includes(t.id))
-      const popular = toolRegistry.filter((t) => !favorites.includes(t.id)).slice(0, 5)
-      return [...favTools, ...popular]
-    }
-
-    return toolRegistry.filter((t) => {
-      const matchTitle = t.title.toLowerCase().includes(q)
-      const matchDesc = t.description.toLowerCase().includes(q)
-      const matchCat = t.category.toLowerCase().includes(q)
-      const matchKeywords = t.keywords.some((k) => k.toLowerCase().includes(q))
-      return matchTitle || matchDesc || matchCat || matchKeywords
-    })
-  }, [query, favorites])
-
-  const handleSelect = (tool: ToolRegistryEntry) => {
-    // Save to recents (simulate file action or navigation)
-    // For now we just route to it
-    navigate(tool.route)
-    onClose()
-  }
+  }, [isOpen, selectedIndex, query, favorites, recentFiles, filteredList, handleSelect, onClose])
 
   // Handle clicking overlay
   const handleOverlayClick = (e: React.MouseEvent) => {

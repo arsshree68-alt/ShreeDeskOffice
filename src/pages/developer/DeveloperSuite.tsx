@@ -108,8 +108,8 @@ const DeveloperSuite = () => {
   const formatXml = () => {
     try {
       let formatted = ''
-      let reg = /(>)(<)(\/*)/g
-      let xml = xmlInput.replace(reg, '$1\r\n$2$3')
+      const reg = /(>)(<)(\/*)/g
+      const xml = xmlInput.replace(reg, '$1\r\n$2$3')
       let pad = 0
       xml.split('\r\n').forEach((node) => {
         let indent = 0
@@ -117,7 +117,7 @@ const DeveloperSuite = () => {
           indent = 0
         } else if (node.match(/^<\/\w/)) {
           if (pad !== 0) pad -= 1
-        } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) {
+        } else if (node.match(/^<\w[^>]*[^\x2f]>.*$/)) {
           indent = 1
         } else {
           indent = 0

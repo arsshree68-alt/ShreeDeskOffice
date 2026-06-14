@@ -10,6 +10,13 @@ const DragDropOverlay = () => {
   const [fileType, setFileType] = useState('')
   const [detectedFile, setDetectedFile] = useState<File | null>(null)
 
+  const processDroppedFile = (file: File) => {
+    setDetectedFile(file)
+    setFileName(file.name)
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    setFileType(ext)
+  }
+
   // Drag counters to handle child elements dragenter/dragleave correctly
   useEffect(() => {
     let dragCounter = 0
@@ -57,13 +64,6 @@ const DragDropOverlay = () => {
       window.removeEventListener('drop', handleDrop)
     }
   }, [])
-
-  const processDroppedFile = (file: File) => {
-    setDetectedFile(file)
-    setFileName(file.name)
-    const ext = file.name.split('.').pop()?.toLowerCase() || ''
-    setFileType(ext)
-  }
 
   const getSuggestedActions = () => {
     switch (fileType) {

@@ -106,7 +106,6 @@ const MergeExcelTool = () => {
       const fileInfoPromises = supportedFiles.map(async (file) => {
         const ext = getFileExtension(file)
         const sizeLabel = formatBytes(file.size)
-        /* eslint-disable-next-line no-useless-assignment */
         let sheets: SheetInfo[] = []
         if (ext === 'csv' || ext === 'tsv') {
           const rows = await parseCsvRows(file, ext === 'tsv' ? '\t' : ',')
@@ -198,7 +197,6 @@ const MergeExcelTool = () => {
   /* eslint-disable-next-line react-hooks/exhaustive-deps */
   const availableHeaders = useMemo(() => buildHeaderUnion(selectedSheetRows), [selectedSheetRows])
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (availableHeaders.length > 0) {
       setSelectedColumns((previous) =>
@@ -214,7 +212,6 @@ const MergeExcelTool = () => {
       })
     }
   }, [availableHeaders])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const runMerge = async () => {
     if (selectedSheetRows.length === 0) {

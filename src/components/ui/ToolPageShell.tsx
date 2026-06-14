@@ -13,6 +13,8 @@ export interface ToolPageShellProps {
   suiteRoute: string
   /** Optional emoji or icon character shown next to the title */
   icon?: ReactNode
+  /** Active step of the workflow (1: Upload, 2: Configure, 3: Preview, 4: Process, 5: Export) */
+  activeStep?: number
   /** The actual tool UI — must internally implement the 5 steps */
   children: ReactNode
 }
@@ -31,6 +33,7 @@ const ToolPageShell = ({
   suiteLabel,
   suiteRoute,
   icon,
+  activeStep = 1,
   children,
 }: ToolPageShellProps) => {
   const navigate = useNavigate()
@@ -59,13 +62,19 @@ const ToolPageShell = ({
 
       {/* Phase indicator */}
       <ol className="tool-phase-indicator" aria-label="Workflow phases">
-        {['Upload', 'Configure', 'Preview', 'Process', 'Export'].map((phase, index) => (
-          <li key={phase} className="tool-phase-step">
-            <span className="tool-phase-number">{index + 1}</span>
-            <span className="tool-phase-label">{phase}</span>
-            {index < 4 && <span className="tool-phase-sep" aria-hidden="true" />}
-          </li>
-        ))}
+        {['Upload', 'Configure', 'Preview', 'Process', 'Export'].map((phase, index) => {
+          const stepNum = index + 1
+          const isActive = stepNum === activeStep
+          const isCompleted = stepNum < activeStep
+          const stepClass = `tool-phase-step${isActive ? ' active' : ''}${isCompleted ? ' completed' : ''}`
+          return (
+            <li key={phase} className={stepClass}>
+              <span className="tool-phase-number">{isCompleted ? '✓' : stepNum}</span>
+              <span className="tool-phase-label">{phase}</span>
+              {index < 4 && <span className="tool-phase-sep" aria-hidden="true" />}
+            </li>
+          )
+        })}
       </ol>
 
       {/* Tool content */}

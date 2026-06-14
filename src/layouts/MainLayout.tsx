@@ -40,6 +40,16 @@ const MainLayout = () => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const location = useLocation()
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 980)
+
+  // Track window size for layout calculations
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 980)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -129,7 +139,7 @@ const MainLayout = () => {
         <main 
           className="content-area" 
           style={{ 
-            marginLeft: isCollapsed ? '80px' : '260px', 
+            marginLeft: isMobile ? '0' : (isCollapsed ? '80px' : '260px'), 
             transition: 'margin-left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' 
           }}
         >

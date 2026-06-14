@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import {
   readWorkbookFromFile,
@@ -43,7 +43,7 @@ const getRowsForSheet = (wb: XLSX.WorkBook, sheetName: string): string[][] => {
 /*  Component                                                           */
 /* ------------------------------------------------------------------ */
 
-const HlbConsolidatorTool = () => {
+const HlbConsolidatorTool = ({ onStepChange }: { onStepChange?: (step: number) => void }) => {
   /* ── Step 1: Upload ── */
   const [files, setFiles] = useState<HlbFileInfo[]>([])
   const [dragging, setDragging] = useState(false)
@@ -63,6 +63,18 @@ const HlbConsolidatorTool = () => {
 
   /* ── Step 5: Export ── */
   const [exportBlob, setExportBlob] = useState<{ xlsx: Blob; csv: string } | null>(null)
+
+  const currentStep = useMemo(() => {
+    if (processing) return 4
+    if (exportBlob) return 5
+    if (previewRows) return 3
+    if (files.length > 0) return 2
+    return 1
+  }, [files, previewRows, processing, exportBlob])
+
+  useEffect(() => {
+    onStepChange?.(currentStep)
+  }, [currentStep, onStepChange])
 
   /* ---------------------------------------------------------------- */
   /*  File ingestion                                                    */
