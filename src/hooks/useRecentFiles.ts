@@ -17,7 +17,14 @@ export const useRecentFiles = () => {
     const saved = localStorage.getItem('shreedesk-recent-files')
     if (saved) {
       try {
-        setRecentFiles(JSON.parse(saved))
+        const parsed = JSON.parse(saved)
+        // Clear out legacy fake data from older sessions
+        if (parsed.some((f: any) => f.name.includes('ShreeDesk_') || f.name.includes('aggregated_block_report') || f.name.includes('solar_school_grids'))) {
+          localStorage.removeItem('shreedesk-recent-files')
+          setRecentFiles([])
+        } else {
+          setRecentFiles(parsed)
+        }
       } catch (e) {
         console.error(e)
       }

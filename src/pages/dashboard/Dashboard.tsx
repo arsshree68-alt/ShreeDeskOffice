@@ -93,7 +93,7 @@ const Dashboard = () => {
       <section 
         style={{ 
           display: 'grid', 
-          gridTemplateColumns: '1.2fr 1fr', 
+          gridTemplateColumns: '1fr', textAlign: 'center', 
           gap: '2.5rem', 
           alignItems: 'center', 
           maxWidth: '1200px', 
@@ -107,15 +107,15 @@ const Dashboard = () => {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
           <div className="hero-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-soft)', color: 'var(--accent)', padding: '0.5rem 1rem', borderRadius: '999px', fontSize: '0.825rem', fontWeight: 700, marginBottom: '1.25rem' }}>
             <FiZap /> <span>SHREEDESK OFFICE OS v3.0.0</span>
           </div>
-          <h1 style={{ fontSize: 'clamp(2.5rem, 4.5vw, 3.75rem)', lineHeight: 1.1, marginBottom: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', textAlign: 'left' }}>
+          <h1 style={{ fontSize: 'clamp(2.5rem, 4.5vw, 3.75rem)', lineHeight: 1.1, marginBottom: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', textAlign: 'center' }}>
             The Premium <span className="gradient-text">Productivity Operating System</span> In Your Browser.
           </h1>
-          <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: 1.6, textAlign: 'left', maxWidth: '560px' }}>
+          <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: 1.6, textAlign: 'center', maxWidth: '560px' }}>
             Process PDFs, consolidate block statistics, clean datasets, write AI reports, and crop image signatures. 100% local, sandboxed inside your browser. No files ever touch our servers.
           </p>
           <div style={{ display: 'flex', gap: '1rem' }}>
@@ -135,103 +135,6 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Animated Workspace Preview (Interactive SVG) */}
-        <motion.div
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center' }}
-        >
-          <div 
-            style={{ 
-              width: '100%', 
-              maxWidth: '440px', 
-              aspectRatio: '4/3', 
-              background: 'var(--panel-bg)', 
-              borderRadius: '1.25rem', 
-              border: '1px solid var(--border)', 
-              padding: '1rem', 
-              boxShadow: 'var(--shadow-lg)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            className="glass"
-          >
-            {/* Interactive Window Shell */}
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56', display: 'block' }}></span>
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e', display: 'block' }}></span>
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f', display: 'block' }}></span>
-            </div>
-            {/* Visual Dashboard Grid Preview */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', height: 'calc(100% - 2.5rem)' }}>
-              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Security Check</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <FiCheckCircle size={18} /> Sandboxed
-                </div>
-                <div style={{ width: '100%', height: '4px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ width: '100%', height: '100%', background: 'var(--success)' }}></div>
-                </div>
-              </div>
-              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Files Processed</span>
-                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent)' }}>{stats.processed}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Local Cache Active</span>
-              </div>
-              <div style={{ gridColumn: 'span 2', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', height: '140px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Daily Activity Log</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent)' }}>Live Analytics</span>
-                </div>
-                <div style={{ width: '100%', height: '95px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={8} tickLine={false} />
-                      <YAxis stroke="var(--text-muted)" fontSize={8} tickLine={false} allowDecimals={false} width={15} />
-                      <Tooltip 
-                        contentStyle={{ background: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderRadius: '4px', fontSize: '0.75rem' }} 
-                        cursor={{ fill: 'var(--accent-soft)' }} 
-                      />
-                      <Bar dataKey="count" fill="var(--accent)" radius={[2, 2, 0, 0]} barSize={14} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Stats Summary Panel */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', padding: '1.5rem', borderRadius: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }} className="glass hover-lift">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            <FiActivity />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Files Processed</div>
-            <strong style={{ fontSize: '1.5rem', color: 'var(--text)' }}>{stats.processed}</strong>
-          </div>
-        </div>
-        <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', padding: '1.5rem', borderRadius: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }} className="glass hover-lift">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            <FiCheckCircle />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Local Space Saved</div>
-            <strong style={{ fontSize: '1.5rem', color: 'var(--text)' }}>{stats.saved}</strong>
-          </div>
-        </div>
-        <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', padding: '1.5rem', borderRadius: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }} className="glass hover-lift">
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            <FiDownload />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Exports Generated</div>
-            <strong style={{ fontSize: '1.5rem', color: 'var(--text)' }}>{stats.exports}</strong>
-          </div>
-        </div>
       </section>
 
       {/* Government Categories */}
