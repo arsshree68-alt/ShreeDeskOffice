@@ -1,5 +1,6 @@
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
+import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 
 export const supportedExcelExtensions = ['xlsx', 'xlsm', 'xlsb', 'xls']
 export const supportedCsvExtensions = ['csv', 'tsv']
@@ -66,15 +67,30 @@ export const parseCsvRows = async (file: File, delimiter?: string) =>
     })
   })
 
-export const downloadBlob = (blob: Blob, fileName: string) => {
+export const downloadBlob = async (blob: Blob, fileName: string) => {
+  let safeName = fileName
+  if (!safeName.startsWith('ShreeDesk_')) {
+    safeName = 'ShreeDesk_' + safeName
+  }
+
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = fileName
+  link.download = safeName
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
   window.URL.revokeObjectURL(url)
+
+  // Sync to Google Drive
+  const token = getGoogleToken()
+  if (token) {
+    try {
+      await uploadFileToDrive('Excel', safeName, blob)
+    } catch (err) {
+      console.error('Error syncing Excel file to Google Drive', err)
+    }
+  }
 }
 
 export const exportWorkbook = (workbook: XLSX.WorkBook, fileName: string) => {

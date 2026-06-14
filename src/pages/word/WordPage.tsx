@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { FiFileText, FiType, FiFile } from 'react-icons/fi'
 import WordToolWorkspace from '../../components/word/WordToolWorkspace'
 
@@ -6,9 +7,10 @@ const WordPage = () => {
   const [search, setSearch] = useState('')
 
   const tools = useMemo(() => [
-    { id: 'wordToPdf', title: 'Word to PDF', description: 'Convert DOC/DOCX/RTF/TXT to PDF, batch support.', icon: <FiFileText /> },
-    { id: 'pdfToWord', title: 'PDF to Word', description: 'PDF to DOCX conversion (OCR-ready architecture).', icon: <FiFile /> },
-    { id: 'reportGenerator', title: 'Report Generator', description: 'Template-based report generation (DOCX/PDF/PPT).', icon: <FiType /> },
+    { id: 'to-pdf', title: 'Word to PDF', description: 'Convert DOC/DOCX/RTF/TXT to PDF, batch support.', icon: <FiFileText />, route: '/word/to-pdf' },
+    { id: 'pdf-to-word', title: 'PDF to Word', description: 'PDF to DOCX conversion (OCR-ready outline extractor).', icon: <FiFile />, route: '/word/pdf-to-word' },
+    { id: 'merge', title: 'Merge Documents', description: 'Combine text from multiple Word or plain text files together.', icon: <FiFileText />, route: '/word/merge' },
+    { id: 'mail-merge', title: 'Mail Merge', description: 'Generate custom bulk letters from templates and CSV tables.', icon: <FiType />, route: '/word/mail-merge' },
   ], [])
 
   const filteredTools = tools.filter(t => t.title.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase()))
@@ -37,11 +39,11 @@ const WordPage = () => {
 
         <div className="pdf-tool-card-grid">
           {filteredTools.map((t) => (
-            <div key={t.id} className="pdf-tool-card">
+            <Link key={t.id} to={t.route} className="pdf-tool-card" style={{ textDecoration: 'none' }}>
               <div className="pdf-tool-icon">{t.icon}</div>
-              <span className="pdf-tool-card-title">{t.title}</span>
+              <span className="pdf-tool-card-title" style={{ color: 'var(--text)' }}>{t.title}</span>
               <span className="pdf-tool-card-copy">{t.description}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

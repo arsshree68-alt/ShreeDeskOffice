@@ -7,6 +7,7 @@ import { loadPdfFileInfo } from '../../tools/pdf/engine/pdfEngine'
 import { parsePageOrder, parsePageSelection } from '../../tools/pdf/engine/pageRanges'
 import type { PdfFileInfo, PdfOutput, PdfProgress, PdfToolDefinition } from '../../tools/pdf/engine/types'
 import ResultSummaryCard from '../ui/ResultSummaryCard'
+import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 
 interface PdfToolWorkspaceProps {
   tool: PdfToolDefinition
@@ -71,6 +72,21 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
   useEffect(() => () => {
     imagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
   }, [imagePreviews])
+
+  useEffect(() => {
+    let defaultName = 'ShreeDesk_Document.pdf'
+    if (tool.id === 'merge') defaultName = 'ShreeDesk_Merged.pdf'
+    else if (tool.id === 'split') defaultName = 'ShreeDesk_Split.zip'
+    else if (tool.id === 'compress') defaultName = 'ShreeDesk_Compressed.pdf'
+    else if (primaryPdf) {
+      const ext = tool.id === 'pdfToImage' ? 'zip' : 'pdf'
+      const baseName = primaryPdf.file.name.replace(/\.[^/.]+$/, "")
+      defaultName = `ShreeDesk_${baseName}_${tool.id}.${ext}`
+    } else {
+      defaultName = `ShreeDesk_${tool.id}.pdf`
+    }
+    setOutputFileName(defaultName)
+  }, [tool, primaryPdf])
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
     setOutput(null)
@@ -242,6 +258,14 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      // Google Drive sync
+      const token = getGoogleToken()
+      if (token) {
+        const isZip = (outputFileName || result.fileName).endsWith('.zip')
+        const category = isZip ? 'Word' : 'PDF'
+        await uploadFileToDrive(category, outputFileName || result.fileName, result.blob)
+      }
 
       setFeedback('')
     } catch (error) {

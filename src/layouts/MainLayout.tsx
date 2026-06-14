@@ -14,11 +14,14 @@ import {
   FiShield, 
   FiActivity, 
   FiSliders, 
-  FiCpu 
+  FiCpu,
+  FiEdit3,
+  FiCommand
 } from 'react-icons/fi'
 
 const navItems = [
   { label: 'Home / Dashboard', path: '/', icon: <FiActivity /> },
+  { label: 'Notes Workspace', path: '/notes', icon: <FiEdit3 /> },
   { label: 'PDF Suite', path: '/pdf', icon: <FiFile /> },
   { label: 'Excel Suite', path: '/excel', icon: <FiBarChart2 /> },
   { label: 'Word Suite', path: '/word', icon: <FiFileText /> },
@@ -27,6 +30,7 @@ const navItems = [
   { label: 'AI Suite', path: '/ai', icon: <FiCpu /> },
   { label: 'Government Suite', path: '/govt', icon: <FiShield /> },
   { label: 'Developer Suite', path: '/developer', icon: <FiSliders /> },
+  { label: 'Shortcuts Manual', path: '/shortcuts', icon: <FiCommand /> },
 ]
 
 const MainLayout = () => {

@@ -7,9 +7,10 @@ import {
   FiCheckCircle, FiChevronRight, FiFolderPlus, FiDownload 
 } from 'react-icons/fi'
 import { useFavorites } from '../../hooks/useFavorites'
-import { useRecentFiles, type RecentFile } from '../../hooks/useRecentFiles'
+import { useRecentFiles } from '../../hooks/useRecentFiles'
 import { toolRegistry } from '../../tools/toolRegistry'
 import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
+import { getGoogleToken, getGoogleProfile, logoutGoogle, type GoogleProfile } from '../../utils/googleDrive'
 
 // Categories registry for display
 const suiteCategories = [
@@ -24,53 +25,14 @@ const Dashboard = () => {
   const { favorites, toggleFavorite } = useFavorites()
   const { recentFiles, clearRecentFiles } = useRecentFiles()
   const [activeCategory, setActiveCategory] = useState<'All' | 'PDF' | 'Excel' | 'Word' | 'PPT' | 'Image' | 'AI' | 'Govt' | 'Developer'>('All')
+  const [googleUser, setGoogleUser] = useState<GoogleProfile | null>(null)
+  const [googleToken, setGoogleToken] = useState<string | null>(null)
 
-  // Set mock data if no files processed yet to make the dashboard look gorgeous
   useEffect(() => {
-    const saved = localStorage.getItem('shreedesk-recent-files')
-    if (!saved || JSON.parse(saved).length === 0) {
-      const mockItems: RecentFile[] = [
-        {
-          id: 'mock-1',
-          name: 'aggregated_block_report.xlsx',
-          action: 'Merged',
-          timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-          size: 1048576,
-          sizeSaved: 262144,
-          path: '/excel/merge'
-        },
-        {
-          id: 'mock-2',
-          name: 'inspection_draft_v3.pdf',
-          action: 'Compressed',
-          timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-          size: 5242880,
-          sizeSaved: 3145728,
-          path: '/pdf/compress'
-        },
-        {
-          id: 'mock-3',
-          name: 'beneficiary_list_redacted.pdf',
-          action: 'Generated',
-          timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
-          size: 1572864,
-          sizeSaved: 0,
-          path: '/govt/do-letter'
-        }
-      ]
-      localStorage.setItem('shreedesk-recent-files', JSON.stringify(mockItems))
-      // trigger state reload
-      window.dispatchEvent(new Event('storage'))
-      // Simple reload fallback for local state
-      try {
-        const fetchFiles = localStorage.getItem('shreedesk-recent-files')
-        if (fetchFiles) {
-          // Trigger a lightweight state update
-          window.location.reload()
-        }
-      } catch (e) {}
-    }
+    setGoogleUser(getGoogleProfile())
+    setGoogleToken(getGoogleToken())
   }, [])
+
 
   // Calculate statistics from local files
   const stats = useMemo(() => {
@@ -141,7 +103,7 @@ const Dashboard = () => {
               className="btn-primary" 
               style={{ padding: '0.85rem 1.75rem', fontSize: '1rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
-              Start Working <kbd style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white' }}>Ctrl+K</kbd>
+              Start Working
             </button>
             <a href="#toolbox" className="btn-secondary" style={{ padding: '0.85rem 1.75rem', fontSize: '1rem', borderRadius: '0.75rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               Explore Tools
@@ -403,6 +365,63 @@ const Dashboard = () => {
 
         {/* Right Column: Recent Activity Logs & Global Drag Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Google SSO & Drive Integration Card */}
+          <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', borderRadius: '1.25rem', padding: '1.5rem' }} className="glass">
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>☁️</span> Google Drive Sync
+            </h3>
+            {googleToken ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--card-bg)', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)' }}>
+                  <img 
+                    src={googleUser?.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80'} 
+                    alt="Profile" 
+                    style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent)' }} 
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <strong style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {googleUser?.name || 'Google User'}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {googleUser?.email}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--success)' }}>
+                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)' }}></span>
+                  Automatic Folder Sync Active
+                </div>
+                <button 
+                  onClick={() => {
+                    logoutGoogle();
+                    setGoogleUser(null);
+                    setGoogleToken(null);
+                  }}
+                  className="btn-secondary"
+                  style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem', border: '1px solid var(--border)' }}
+                >
+                  Disconnect Account
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'center', padding: '0.5rem 0' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  Connect your Google account to automatically organize and save all exported PDFs, Sheets, presentations, and note drafts to Google Drive.
+                </p>
+                <Link 
+                  to="/login"
+                  className="btn-primary"
+                  style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none' }}
+                >
+                  <svg style={{ width: '16px', height: '16px', fill: 'currentColor' }} viewBox="0 0 24 24">
+                    <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.94 5.94 0 018 12.571a5.96 5.96 0 015.99-5.943c1.528 0 2.91.564 3.978 1.49l3.12-3.07C19.123 3.327 16.744 2 13.99 2 8.163 2 3.5 6.643 3.5 12.571s4.663 10.572 10.49 10.572c6.07 0 10.077-4.244 10.077-10.237 0-.693-.082-1.218-.184-1.621H12.24z"/>
+                  </svg>
+                  Connect Google Drive
+                </Link>
+              </div>
+            )}
+          </div>
+
           {/* Recent Files Logs */}
           <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', borderRadius: '1.25rem', padding: '1.5rem' }} className="glass">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

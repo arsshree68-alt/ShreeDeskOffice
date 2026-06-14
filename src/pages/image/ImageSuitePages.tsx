@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import ToolPageShell from '../../components/ui/ToolPageShell'
 import { FiImage, FiDownload } from 'react-icons/fi'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
@@ -6,9 +7,22 @@ import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 
 type ImageTab = 'compress' | 'resize' | 'passport' | 'signature' | 'scanner'
 
+const getTabFromPath = (path: string): ImageTab => {
+  if (path.includes('/image/resize')) return 'resize'
+  if (path.includes('/image/passport')) return 'passport'
+  if (path.includes('/image/signature') || path.includes('/image/extract-signature')) return 'signature'
+  if (path.includes('/image/scanner')) return 'scanner'
+  return 'compress'
+}
+
 const ImageSuitePages = () => {
-  const [activeTab, setActiveTab] = useState<ImageTab>('compress')
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState<ImageTab>(() => getTabFromPath(window.location.pathname))
   const { addRecentFile } = useRecentFiles()
+
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname))
+  }, [location.pathname])
 
   // Common File States
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -77,7 +91,8 @@ const ImageSuitePages = () => {
       const approxSize = Math.round((dataUrl.length - 22) * 3 / 4)
       setProcessedSize(approxSize)
 
-      addRecentFile(selectedFile?.name || 'compressed_image.jpg', 'Compressed', originalSize, originalSize - approxSize, '/image')
+      const regName = selectedFile?.name ? 'ShreeDesk_' + selectedFile.name : 'ShreeDesk_compressed_image.jpg'
+      addRecentFile(regName, 'Compressed', originalSize, originalSize - approxSize, '/image')
     }
     img.src = imagePreview
   }
@@ -99,7 +114,8 @@ const ImageSuitePages = () => {
       const approxSize = Math.round((dataUrl.length - 22) * 3 / 4)
       setProcessedSize(approxSize)
 
-      addRecentFile('resized_image.jpg', 'Compressed', originalSize, 0, '/image')
+      const regName = selectedFile?.name ? 'ShreeDesk_resized_' + selectedFile.name : 'ShreeDesk_resized_image.jpg'
+      addRecentFile(regName, 'Compressed', originalSize, 0, '/image')
     }
     img.src = imagePreview
   }
@@ -138,7 +154,7 @@ const ImageSuitePages = () => {
       setProcessedPreview(dataUrl)
       setProcessedSize(Math.round((dataUrl.length - 22) * 3 / 4))
 
-      addRecentFile('passport_photo.jpg', 'Generated', 0, 0, '/image')
+      addRecentFile('ShreeDesk_passport_photo.jpg', 'Generated', 0, 0, '/image')
     }
     img.src = imagePreview
   }
@@ -183,7 +199,7 @@ const ImageSuitePages = () => {
       setProcessedPreview(dataUrl)
       setProcessedSize(Math.round((dataUrl.length - 22) * 3 / 4))
 
-      addRecentFile('extracted_signature.png', 'Generated', 0, 0, '/image')
+      addRecentFile('ShreeDesk_extracted_signature.png', 'Generated', 0, 0, '/image')
     }
     img.src = imagePreview
   }
@@ -237,7 +253,7 @@ const ImageSuitePages = () => {
       setProcessedPreview(dataUrl)
       setProcessedSize(Math.round((dataUrl.length - 22) * 3 / 4))
 
-      addRecentFile('scanned_document.jpg', 'Scanned', originalSize, 0, '/image')
+      addRecentFile('ShreeDesk_scanned_document.jpg', 'Scanned', originalSize, 0, '/image')
     }
     img.src = imagePreview
   }
@@ -510,7 +526,7 @@ const ImageSuitePages = () => {
                     </div>
                     <a 
                       href={processedPreview} 
-                      download={activeTab === 'signature' ? 'signature.png' : 'shreedesk_image.jpg'}
+                      download={activeTab === 'signature' ? 'ShreeDesk_Signature.png' : 'ShreeDesk_Image.jpg'}
                       className="btn-primary"
                       style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem' }}
                     >

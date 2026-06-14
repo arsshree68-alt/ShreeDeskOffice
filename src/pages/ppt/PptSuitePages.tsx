@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import ToolPageShell from '../../components/ui/ToolPageShell'
-import { FiCpu, FiLayers, FiDownload, FiTrash2 } from 'react-icons/fi'
+import { FiCpu, FiLayers, FiDownload, FiTrash2, FiPlus } from 'react-icons/fi'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
+import pptxgen from 'pptxgenjs'
+import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 
 interface Slide {
   id: string
@@ -10,23 +13,29 @@ interface Slide {
   layout: 'title' | 'content' | 'split'
 }
 
+const getTabFromPath = (path: string): 'manager' | 'ai-presentation' => {
+  if (path.includes('/ppt/topic-to-ppt') || path.includes('/ppt/ai') || path.includes('/ppt/gov-presentation') || path.includes('/ppt/report-to-ppt')) {
+    return 'ai-presentation'
+  }
+  return 'manager'
+}
+
 const PptSuitePages = () => {
-  const [activeTab, setActiveTab] = useState<'manager' | 'ai-presentation'>('manager')
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState<'manager' | 'ai-presentation'>(() => getTabFromPath(window.location.pathname))
   const { addRecentFile } = useRecentFiles()
 
-  // --- Slide Manager States ---
-  const [slides, setSlides] = useState<Slide[]>([
-    { id: '1', title: 'District Sanitation Survey 2026', bulletPoints: ['Nodal presentation on rural blocks', 'Presented by Ministry of Health', 'Dated: June 2026'], layout: 'title' },
-    { id: '2', title: 'Key Operational Statistics', bulletPoints: ['450 health sub-centers surveyed', '82% primary sanitation clearance rate', 'Gap identified in block subdivisions 3 & 4'], layout: 'content' },
-    { id: '3', title: 'Financial Allocations & Expenditure', bulletPoints: ['Total budget approved: Rs. 40 Lakhs', 'Expenditure cleared: Rs. 26 Lakhs', 'Pending clearance: Rs. 14 Lakhs'], layout: 'content' },
-    { id: '4', title: 'Action Plan Q3-Q4', bulletPoints: ['ANM kit supplies dispatch: July 15', 'Sub-center water pipeline audits: August 1', 'Training of block supervisors: August 20'], layout: 'content' },
-    { id: '5', title: 'Conclusion & Next Steps', bulletPoints: ['Immediate administrative approvals required', 'Submission to DM Patna desk by July 10'], layout: 'split' }
-  ])
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname))
+  }, [location.pathname])
 
-  const [selectedSlideId, setSelectedSlideId] = useState<string>('1')
+  // --- Slide Manager States ---
+  const [slides, setSlides] = useState<Slide[]>([])
+
+  const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null)
 
   // --- AI Presentation States ---
-  const [pptTopic, setPptTopic] = useState('Implementation of Solar energy grids in government primary schools')
+  const [pptTopic, setPptTopic] = useState('')
   const [pptNumSlides, setPptNumSlides] = useState(6)
   const [pptTemplate, setPptTemplate] = useState<'official' | 'modern' | 'minimal'>('official')
   const [aiSlides, setAiSlides] = useState<Slide[]>([])
@@ -115,36 +124,73 @@ const PptSuitePages = () => {
       { id: 'ai-6', title: 'Expected Strategic Milestones', bulletPoints: ['Zero dependency on traditional grids', '100% solar supply in summer blocks', 'Reduction of school electricity expense log by 92%'], layout: 'content' }
     ]
     setAiSlides(mock.slice(0, pptNumSlides))
-    addRecentFile('solar_school_grids.pptx', 'Generated', 0, 0, '/ppt')
   }
 
-  // Export current slide deck to PDF/HTML
+  // Export current slide deck to real PPTX presentation
   const handleExportPresentation = () => {
     const list = activeTab === 'manager' ? slides : aiSlides
     if (list.length === 0) return
 
-    // Simple textual representation to download as file
-    let content = `SHREEDESK OFFICE OS PRESENTATION EXPORT\n`
-    content += `==========================================\n\n`
-    list.forEach((slide, idx) => {
-      content += `SLIDE ${idx + 1}: ${slide.title.toUpperCase()}\n`
-      content += `------------------------------------------\n`
-      slide.bulletPoints.forEach(p => {
-        content += `• ${p}\n`
+    const pres = new pptxgen()
+    
+    // Set presentation properties
+    pres.title = "ShreeDesk Presentation"
+    pres.subject = "Office Outline"
+
+    list.forEach((slide) => {
+      const s = pres.addSlide()
+      
+      // Add Title
+      s.addText(slide.title, {
+        x: 0.5,
+        y: 0.5,
+        w: '90%',
+        h: 1.0,
+        fontSize: 24,
+        bold: true,
+        color: '3b82f6', // Premium theme color
+        fontFace: 'Arial'
       })
-      content += `\n\n`
+
+      // Add Bullet points
+      if (slide.bulletPoints && slide.bulletPoints.length > 0) {
+        s.addText(
+          slide.bulletPoints.map(p => ({ text: p, options: { bullet: true } })),
+          {
+            x: 0.5,
+            y: 1.8,
+            w: '90%',
+            h: 4.5,
+            fontSize: 14,
+            color: '333333',
+            fontFace: 'Arial',
+            lineSpacing: 22
+          }
+        )
+      }
     })
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'presentation_export.txt'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-    addRecentFile('presentation_export.pptx', 'Generated', content.length, 0, '/ppt')
+    const topicSlug = pptTopic.trim() 
+      ? pptTopic.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30) 
+      : 'Presentation'
+    const outputName = `ShreeDesk_${topicSlug}.pptx`
+
+    // Write file client-side
+    pres.writeFile({ fileName: outputName })
+      .then(() => {
+        addRecentFile(outputName, 'Generated', 0, 0, '/ppt')
+      })
+      .catch((err) => console.error('Error downloading presentation', err))
+
+    // Upload to Google Drive if token exists
+    const token = getGoogleToken()
+    if (token) {
+      pres.write({ outputType: 'blob' })
+        .then(async (blob: any) => {
+          await uploadFileToDrive('PPT', outputName, blob as Blob)
+        })
+        .catch(err => console.error('Error syncing presentation to Drive', err))
+    }
   }
 
   const selectedSlide = (activeTab === 'manager' ? slides : aiSlides).find(s => s.id === selectedSlideId) || (activeTab === 'manager' ? slides[0] : aiSlides[0])
@@ -228,7 +274,26 @@ const PptSuitePages = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }} className="responsive-2col">
               {/* Visual slides catalog */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visual Deck Sorter</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visual Deck Sorter</span>
+                  <button 
+                    className="btn-secondary" 
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => {
+                      const newId = Math.random().toString(36).substring(2, 9)
+                      const newSlide: Slide = {
+                        id: newId,
+                        title: 'New Slide',
+                        bulletPoints: ['First bullet point...'],
+                        layout: 'content'
+                      }
+                      setSlides([...slides, newSlide])
+                      setSelectedSlideId(newId)
+                    }}
+                  >
+                    <FiPlus /> Add Slide
+                  </button>
+                </div>
                 
                 <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
                   {slides.map((slide, idx) => (
@@ -336,7 +401,7 @@ const PptSuitePages = () => {
                   </>
                 ) : (
                   <div style={{ padding: '4rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No slides in template deck. Click add slide.
+                    No slides in template deck. Click "+ Add Slide" above to get started.
                   </div>
                 )}
               </div>

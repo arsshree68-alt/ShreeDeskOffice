@@ -1,62 +1,149 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import ToolPageShell from '../../components/ui/ToolPageShell'
-import { FiPrinter } from 'react-icons/fi'
+import { FiPrinter, FiDownload, FiSave } from 'react-icons/fi'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
+import HlbConsolidatorTool from '../../tools/gov/HlbConsolidatorTool'
+import { uploadFileToDrive } from '../../utils/googleDrive'
 
-type GovToolTab = 'office-note' | 'do-letter' | 'rti-draft' | 'naming' | 'translation' | 'census'
+type GovToolTab = 'hlb' | 'office-note' | 'do-letter' | 'rti-draft' | 'naming' | 'translation' | 'census'
+
+const getTabFromPath = (path: string): GovToolTab => {
+  if (path.includes('/govt/hlb')) return 'hlb'
+  if (path.includes('/govt/office-note')) return 'office-note'
+  if (path.includes('/govt/do-letter')) return 'do-letter'
+  if (path.includes('/govt/rti-draft')) return 'rti-draft'
+  if (path.includes('/govt/naming')) return 'naming'
+  if (path.includes('/govt/translation')) return 'translation'
+  if (path.includes('/govt/census')) return 'census'
+  return 'office-note'
+}
 
 const GovSuitePages = () => {
-  const [activeTab, setActiveTab] = useState<GovToolTab>('office-note')
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState<GovToolTab>(() => getTabFromPath(window.location.pathname))
   const { addRecentFile } = useRecentFiles()
 
+  // Sync tab with path routing
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname))
+  }, [location.pathname])
+
   // 1. Office Note State
-  const [noteFileNo, setNoteFileNo] = useState('NO. H&FW/2026/BUDGET/ANM-4')
-  const [noteSubject, setNoteSubject] = useState('Sanction of budget for ANM sub-centers in block sanitation drive')
-  const [noteParas, setNoteParas] = useState([
-    'Submitted for perusal and directions regarding block sanitation drives in 4 district subdivisions.',
-    'It is proposed to allocate Rs. 10 Lakhs per block sub-center for immediate supply purchases, ANM travel kits, and testing reagents.',
-    'The Finance department has reviewed the layout and cleared the funds under Scheme head: NHM-2026.'
-  ])
+  const [noteFileNo, setNoteFileNo] = useState('')
+  const [noteSubject, setNoteSubject] = useState('')
+  const [noteParas, setNoteParas] = useState([''])
 
   // 2. DO Letter State
   const [doEmblem, setDoEmblem] = useState('🏛️')
-  const [doSenderName, setDoSenderName] = useState('Dr. Abhishek Shrivastava, IAS')
-  const [doDesignation, setDoDesignation] = useState('Joint Secretary (Health)')
-  const [doAddress, setDoAddress] = useState('Room 402, Ministry of Health, Shastri Bhawan, New Delhi')
-  const [doLetterNo, setDoLetterNo] = useState('D.O. NO. JS(H)/2026-112')
-  const [doRecipient, setDoRecipient] = useState('Shri R. K. Varma, District Magistrate, Patna')
-  const [doBody, setDoBody] = useState('I am writing to draw your personal attention to the pending immunization targets in your district. It has been observed that block subdivisions 3 and 4 are lagging behind state averages.\n\nI would be grateful if you could personally convene a review meeting with all block supervisors and ensure corrective action is executed immediately.')
+  const [doSenderName, setDoSenderName] = useState('')
+  const [doDesignation, setDoDesignation] = useState('')
+  const [doAddress, setDoAddress] = useState('')
+  const [doLetterNo, setDoLetterNo] = useState('')
+  const [doRecipient, setDoRecipient] = useState('')
+  const [doBody, setDoBody] = useState('')
 
   // 3. RTI Draft State
-  const [rtiPio, setRtiPio] = useState('Public Information Officer (PIO)\nDepartment of Public Works\nNoida Authority Office')
-  const [rtiApplicant, setRtiApplicant] = useState('Arsh Sharma, 102 Green Park, New Delhi')
-  const [rtiQuestions, setRtiQuestions] = useState([
-    'Please provide the total budget sanctioned for road maintenance in Ward 14 from April 2025 to March 2026.',
-    'Provide copies of all completion certificates submitted by contractors for projects in Ward 14 during this period.',
-    'List the name of the nodal engineers responsible for audit clearance of these projects.'
-  ])
+  const [rtiPio, setRtiPio] = useState('')
+  const [rtiApplicant, setRtiApplicant] = useState('')
+  const [rtiQuestions, setRtiQuestions] = useState([''])
 
   // 4. File Naming Standardizer
   const [nameDept, setNameDept] = useState('HEALTH')
   const [nameDocType, setNameDocType] = useState('CIRCULAR')
-  const [nameSubjectCode, setNameSubjectCode] = useState('INFLUENZA_GUIDELINES')
-  const [nameYear, setNameYear] = useState('2026')
+  const [nameSubjectCode, setNameSubjectCode] = useState('')
+  const [nameYear, setNameYear] = useState(new Date().getFullYear().toString())
   const [nameResult, setNameResult] = useState('')
 
   // 5. Official Translation State
-  const [transInput, setTransInput] = useState('Please review this note and submit it for approval by the Joint Secretary. Action required on priority.')
+  const [transInput, setTransInput] = useState('')
   const [transOutput, setTransOutput] = useState('')
+  const [translating, setTranslating] = useState(false)
 
   // 6. Census Data Formatter
-  const [censusCsv, setCensusCsv] = useState('Block,MalePopulation,FemalePopulation,LiteracyRate\nBlock-A,14500,13200,82.4%\nBlock-B,12200,11900,74.1%\nBlock-C,18100,17800,89.5%')
+  const [censusCsv, setCensusCsv] = useState('')
   const [censusResult, setCensusResult] = useState('')
+
+  // --- Office Note Exports ---
+  const handleDownloadNote = () => {
+    const text = `GOVERNMENT OF INDIA / DEPT CODES\nFile Reference: ${noteFileNo || 'DRAFT'}\n\nSUBJECT: ${noteSubject.toUpperCase() || 'DRAFT SUBJECT'}\n\n` +
+      noteParas.map((p, i) => `${i + 1}. ${p || '...'}`).join('\n\n') +
+      `\n\n\nUnder Secretary to Govt.\nNodal Desk`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_OfficeNote_${noteFileNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+    addRecentFile(fileName, 'Generated', blob.size, 0, '/govt')
+  }
+
+  const handleSyncNoteToDrive = async () => {
+    const text = `GOVERNMENT OF INDIA / DEPT CODES\nFile Reference: ${noteFileNo || 'DRAFT'}\n\nSUBJECT: ${noteSubject.toUpperCase() || 'DRAFT SUBJECT'}\n\n` +
+      noteParas.map((p, i) => `${i + 1}. ${p || '...'}`).join('\n\n') +
+      `\n\n\nUnder Secretary to Govt.\nNodal Desk`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_OfficeNote_${noteFileNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
+    const res = await uploadFileToDrive('Word', fileName, blob)
+    alert(res.message)
+  }
+
+  // --- DO Letter Exports ---
+  const handleDownloadDoLetter = () => {
+    const text = `${doEmblem} DEMI-OFFICIAL (D.O.) LETTERHEAD\n\nReference: ${doLetterNo || 'DRAFT'}\nDate: ${new Date().toLocaleDateString()}\n\nFrom:\n${doSenderName || '...'}\n${doDesignation || '...'}\n${doAddress || '...'}\n\nTo:\n${doRecipient || '...'}\n\nDear Recipient,\n\n${doBody || '...'}\n\nWith regards,\n\nYours sincerely,\n${doSenderName.split(' ')[0] || '...'}`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_DOLetter_${doLetterNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+    addRecentFile(fileName, 'Generated', blob.size, 0, '/govt')
+  }
+
+  const handleSyncDoLetterToDrive = async () => {
+    const text = `${doEmblem} DEMI-OFFICIAL (D.O.) LETTERHEAD\n\nReference: ${doLetterNo || 'DRAFT'}\nDate: ${new Date().toLocaleDateString()}\n\nFrom:\n${doSenderName || '...'}\n${doDesignation || '...'}\n${doAddress || '...'}\n\nTo:\n${doRecipient || '...'}\n\nDear Recipient,\n\n${doBody || '...'}\n\nWith regards,\n\nYours sincerely,\n${doSenderName.split(' ')[0] || '...'}`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_DOLetter_${doLetterNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
+    const res = await uploadFileToDrive('Word', fileName, blob)
+    alert(res.message)
+  }
+
+  // --- RTI Exports ---
+  const handleDownloadRti = () => {
+    const text = `FORM FOR RTI APPLICATION UNDER SECTION 6(1) OF RTI ACT 2005\n\nTo,\n${rtiPio || '...'}\n\n1. Name & Address of Applicant:\n${rtiApplicant || '...'}\n\n2. Particulars of Information Required:\n` +
+      rtiQuestions.map((q, idx) => `${idx + 1}. ${q || '...'}`).join('\n') +
+      `\n\n3. Citizenship Status:\nI hereby declare that I am a citizen of India and entitled to seek this information.\n\n4. Fee Payment Details:\nPostal Order (IPO) of Rs. 10/- is attached with this application.\n\nDate: ${new Date().toLocaleDateString()}\nApplicant Signature`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_RTI_Application_${new Date().getTime()}.txt`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+    addRecentFile(fileName, 'Generated', blob.size, 0, '/govt')
+  }
+
+  const handleSyncRtiToDrive = async () => {
+    const text = `FORM FOR RTI APPLICATION UNDER SECTION 6(1) OF RTI ACT 2005\n\nTo,\n${rtiPio || '...'}\n\n1. Name & Address of Applicant:\n${rtiApplicant || '...'}\n\n2. Particulars of Information Required:\n` +
+      rtiQuestions.map((q, idx) => `${idx + 1}. ${q || '...'}`).join('\n') +
+      `\n\n3. Citizenship Status:\nI hereby declare that I am a citizen of India and entitled to seek this information.\n\n4. Fee Payment Details:\nPostal Order (IPO) of Rs. 10/- is attached with this application.\n\nDate: ${new Date().toLocaleDateString()}\nApplicant Signature`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_RTI_Application_${new Date().getTime()}.txt`
+    const res = await uploadFileToDrive('Word', fileName, blob)
+    alert(res.message)
+  }
 
   // --- File Naming logic ---
   const handleNamingStandardize = () => {
     const cleanDept = nameDept.toUpperCase().replace(/[^A-Z0-9]/g, '')
     const cleanDoc = nameDocType.toUpperCase().replace(/[^A-Z0-9]/g, '')
     const cleanSub = nameSubjectCode.toUpperCase().replace(/[^A-Z0-9_]/g, '')
-    const result = `${nameYear}_${cleanDept}_${cleanDoc}_${cleanSub}.pdf`
+    const result = `ShreeDesk_${nameYear}_${cleanDept}_${cleanDoc}_${cleanSub}.pdf`
     setNameResult(result)
     addRecentFile(result, 'Generated', 0, 0, '/govt')
   }
@@ -75,18 +162,45 @@ const GovSuitePages = () => {
     'file': 'नस्ती/फ़ाइल'
   }
 
-  const runTranslation = () => {
-    let translated = transInput
+  const runTranslation = async () => {
+    if (!transInput.trim()) return
+    
+    const geminiKey = localStorage.getItem('shreedesk-gemini-key')
+    if (geminiKey) {
+      setTranslating(true)
+      setTransOutput('Connecting to Gemini AI for translation...')
+      try {
+        const prompt = `Translate the following official government document from English to Hindi (Rajbhasha). Maintain the formal administrative vocabulary, structure, and tone. Output ONLY the translated Hindi text without any explanations, markdown codeblocks, or formatting:\n\n${transInput}`
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        })
+        const data = await response.json()
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        setTransOutput(text.trim())
+      } catch (err) {
+        console.error(err)
+        setTransOutput('Gemini API call failed. Falling back to local glossary.\n\n' + runGlossaryTranslation(transInput))
+      } finally {
+        setTranslating(false)
+      }
+    } else {
+      setTransOutput(runGlossaryTranslation(transInput))
+    }
+  }
 
+  const runGlossaryTranslation = (input: string) => {
+    let translated = input
     Object.keys(glossaryMap).forEach(englishPhrase => {
       const regex = new RegExp(englishPhrase, 'gi')
       translated = translated.replace(regex, glossaryMap[englishPhrase])
     })
 
-    if (translated === transInput) {
-      setTransOutput('Translation: ' + transInput + '\n\n*(Note: Client-side translator matches standard official glossary terms. Configure Gemini API key for complete document translations).*')
+    if (translated === input) {
+      return 'Translation: ' + input + '\n\n*(Note: Client-side translator matches standard official glossary terms. Configure Gemini API key in settings for full document AI translation).*'
     } else {
-      setTransOutput(translated)
+      return translated
     }
   }
 
@@ -95,9 +209,8 @@ const GovSuitePages = () => {
     try {
       const lines = censusCsv.split('\n').filter(l => l.trim() !== '')
       if (lines.length === 0) return
-      // headers parsed
-      let formatted = 'SUMMARY STATISTICAL CENSUS REPORT\n\n'
       
+      let formatted = 'SUMMARY STATISTICAL CENSUS REPORT\n\n'
       let totalMale = 0
       let totalFemale = 0
 
@@ -110,7 +223,7 @@ const GovSuitePages = () => {
       }
 
       const totalPop = totalMale + totalFemale
-      const sexRatio = Math.round((totalFemale / totalMale) * 1000)
+      const sexRatio = totalMale > 0 ? Math.round((totalFemale / totalMale) * 1000) : 0
 
       formatted += `Total Blocks Analyzed: ${lines.length - 1}\n`
       formatted += `Total Male Population: ${totalMale.toLocaleString()}\n`
@@ -120,10 +233,30 @@ const GovSuitePages = () => {
       formatted += `\nRaw data grid matches: OK.\n`
 
       setCensusResult(formatted)
-      addRecentFile('census_analysis_report.txt', 'Generated', formatted.length, 0, '/govt')
+      addRecentFile('ShreeDesk_census_analysis_report.txt', 'Generated', formatted.length, 0, '/govt')
     } catch (e) {
       setCensusResult('Error compiling CSV census values. Ensure population columns are numeric.')
     }
+  }
+
+  const handleDownloadCensus = () => {
+    if (!censusResult) return
+    const blob = new Blob([censusResult], { type: 'text/plain;charset=utf-8' })
+    const fileName = 'ShreeDesk_census_analysis_report.txt'
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleSyncCensusToDrive = async () => {
+    if (!censusResult) return
+    const blob = new Blob([censusResult], { type: 'text/plain;charset=utf-8' })
+    const fileName = 'ShreeDesk_census_analysis_report.txt'
+    const res = await uploadFileToDrive('Excel', fileName, blob)
+    alert(res.message)
   }
 
   const handlePrint = () => {
@@ -144,6 +277,7 @@ const GovSuitePages = () => {
         <aside style={{ background: 'var(--panel-bg)', borderRadius: '1rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', border: '1px solid var(--border)' }} className="glass">
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', paddingLeft: '0.5rem', marginBottom: '0.5rem', display: 'block' }}>Drafts</span>
           {[
+            { id: 'hlb', label: 'HLB Consolidator', icon: '🏥' },
             { id: 'office-note', label: 'Office Green Note', icon: '🏢' },
             { id: 'do-letter', label: 'D.O. Letterhead', icon: '✉️' },
             { id: 'rti-draft', label: 'RTI Draft Box', icon: '📜' },
@@ -180,17 +314,32 @@ const GovSuitePages = () => {
         {/* Content Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
+          {/* 0. HLB Consolidator */}
+          {activeTab === 'hlb' && (
+            <HlbConsolidatorTool />
+          )}
+
           {/* 1. Office Note Generator */}
           {activeTab === 'office-note' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '1.5rem' }} className="responsive-2col">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   File Reference Number
-                  <input type="text" value={noteFileNo} onChange={e => setNoteFileNo(e.target.value)} />
+                  <input 
+                    type="text" 
+                    value={noteFileNo} 
+                    onChange={e => setNoteFileNo(e.target.value)} 
+                    placeholder="e.g. F.No. 11013/05/2026-Admn"
+                  />
                 </label>
                 <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   Note Subject
-                  <input type="text" value={noteSubject} onChange={e => setNoteSubject(e.target.value)} />
+                  <input 
+                    type="text" 
+                    value={noteSubject} 
+                    onChange={e => setNoteSubject(e.target.value)} 
+                    placeholder="e.g. Sanction and purchase of desktop workstations"
+                  />
                 </label>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -200,6 +349,7 @@ const GovSuitePages = () => {
                       key={idx}
                       rows={3}
                       value={para}
+                      placeholder="Write your note paragraph here..."
                       onChange={e => {
                         const next = [...noteParas]
                         next[idx] = e.target.value
@@ -211,17 +361,21 @@ const GovSuitePages = () => {
                   <button onClick={() => setNoteParas([...noteParas, ''])} className="btn-secondary" style={{ width: 'max-content', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>+ Add Paragraph</button>
                 </div>
 
-                <button onClick={handlePrint} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', width: 'max-content' }}><FiPrinter /> Print Note</button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button onClick={handlePrint} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiPrinter /> Print Note</button>
+                  <button onClick={handleDownloadNote} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiDownload /> Download Draft</button>
+                  <button onClick={handleSyncNoteToDrive} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiSave /> Sync to Drive</button>
+                </div>
               </div>
 
               {/* Note sheet output */}
               <div className="green-note-sheet" id="printable-area">
                 <div className="green-note-header">
                   <strong style={{ display: 'block', fontSize: '1rem' }}>GOVERNMENT OF INDIA / STATE DEPT</strong>
-                  <span style={{ fontSize: '0.85rem' }}>Reference: {noteFileNo}</span>
+                  <span style={{ fontSize: '0.85rem' }}>Reference: {noteFileNo || '_________________'}</span>
                 </div>
                 <div style={{ fontWeight: 700, textDecoration: 'underline', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-                  SUBJECT: {noteSubject.toUpperCase()}
+                  SUBJECT: {noteSubject ? noteSubject.toUpperCase() : 'SUBJECT OUTLINE'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', fontSize: '0.9rem' }}>
                   {noteParas.map((para, idx) => (
@@ -246,34 +400,39 @@ const GovSuitePages = () => {
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <label className="input-label" style={{ flex: 1 }}>
                     Emblem Symbol
-                    <input type="text" value={doEmblem} onChange={e => setDoEmblem(e.target.value)} />
+                    <input type="text" value={doEmblem} onChange={e => setDoEmblem(e.target.value)} placeholder="e.g. 🏛️" />
                   </label>
                   <label className="input-label" style={{ flex: 1.5 }}>
                     D.O. Reference No.
-                    <input type="text" value={doLetterNo} onChange={e => setDoLetterNo(e.target.value)} />
+                    <input type="text" value={doLetterNo} onChange={e => setDoLetterNo(e.target.value)} placeholder="e.g. D.O. No. 12012/01/2026" />
                   </label>
                 </div>
                 <label className="input-label">
                   Sender Name
-                  <input type="text" value={doSenderName} onChange={e => setDoSenderName(e.target.value)} />
+                  <input type="text" value={doSenderName} onChange={e => setDoSenderName(e.target.value)} placeholder="e.g. Ramesh Patel" />
                 </label>
                 <label className="input-label">
                   Designation
-                  <input type="text" value={doDesignation} onChange={e => setDoDesignation(e.target.value)} />
+                  <input type="text" value={doDesignation} onChange={e => setDoDesignation(e.target.value)} placeholder="e.g. Joint Secretary" />
                 </label>
                 <label className="input-label">
                   Sender Address
-                  <input type="text" value={doAddress} onChange={e => setDoAddress(e.target.value)} />
+                  <input type="text" value={doAddress} onChange={e => setDoAddress(e.target.value)} placeholder="e.g. Room 104, North Block, New Delhi" />
                 </label>
                 <label className="input-label">
                   Recipient Address
-                  <input type="text" value={doRecipient} onChange={e => setDoRecipient(e.target.value)} />
+                  <input type="text" value={doRecipient} onChange={e => setDoRecipient(e.target.value)} placeholder="e.g. Dr. Rajesh Sharma, Director General, NHM" />
                 </label>
                 <label className="input-label">
                   Body Text
-                  <textarea rows={5} value={doBody} onChange={e => setDoBody(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }} />
+                  <textarea rows={5} value={doBody} onChange={e => setDoBody(e.target.value)} placeholder="Dear Rajesh,\n\nI would like to request you to look into the matter..." style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }} />
                 </label>
-                <button onClick={handlePrint} className="btn-primary" style={{ width: 'max-content' }}><FiPrinter /> Print Letter</button>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button onClick={handlePrint} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiPrinter /> Print Letter</button>
+                  <button onClick={handleDownloadDoLetter} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiDownload /> Download Draft</button>
+                  <button onClick={handleSyncDoLetterToDrive} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiSave /> Sync to Drive</button>
+                </div>
               </div>
 
               {/* D.O. Letterhead preview */}
@@ -281,34 +440,34 @@ const GovSuitePages = () => {
                 <div className="do-letterhead-header">
                   <div style={{ width: '50%' }}>
                     <div className="do-letterhead-emblem">{doEmblem}</div>
-                    <strong style={{ fontSize: '0.9rem', display: 'block', marginTop: '0.5rem' }}>{doSenderName}</strong>
-                    <span style={{ fontSize: '0.8rem', color: '#555', display: 'block' }}>{doDesignation}</span>
-                    <span style={{ fontSize: '0.75rem', color: '#666', display: 'block', lineHeight: 1.3 }}>{doAddress}</span>
+                    <strong style={{ fontSize: '0.9rem', display: 'block', marginTop: '0.5rem' }}>{doSenderName || 'SENDER NAME'}</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#555', display: 'block' }}>{doDesignation || 'DESIGNATION'}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#666', display: 'block', lineHeight: 1.3 }}>{doAddress || 'SENDER ADDRESS'}</span>
                   </div>
                   <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>
-                    <strong>{doLetterNo}</strong>
+                    <strong>{doLetterNo || 'D.O. REF NO'}</strong>
                     <div style={{ marginTop: '0.5rem' }}>Dated: {new Date().toLocaleDateString()}</div>
                   </div>
                 </div>
 
                 <div style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                  Dear <strong>{doRecipient.split(',')[0]}</strong>,
+                  Dear <strong>{doRecipient ? doRecipient.split(',')[0] : 'Recipient'}</strong>,
                 </div>
 
                 <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', lineHeight: 1.6, textIndent: '2rem' }}>
-                  {doBody}
+                  {doBody || 'Write your letter content...'}
                 </div>
 
                 <div style={{ marginTop: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.9rem' }}>
                   <span>With regards,</span>
                   <span style={{ height: '40px' }}></span>
                   <strong>Yours sincerely,</strong>
-                  <span style={{ marginTop: '0.25rem' }}>({doSenderName.split(',')[0]})</span>
+                  <span style={{ marginTop: '0.25rem' }}>({doSenderName ? doSenderName.split(' ')[0] : 'Sender'})</span>
                 </div>
 
                 <div style={{ borderTop: '1px solid #ddd', marginTop: '2rem', paddingTop: '1rem', fontSize: '0.8rem', color: '#555' }}>
                   <strong>To:</strong><br />
-                  {doRecipient}
+                  {doRecipient || 'Recipient name & address details'}
                 </div>
               </div>
             </div>
@@ -320,11 +479,11 @@ const GovSuitePages = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <label className="input-label">
                   Public Information Officer (PIO)
-                  <textarea rows={3} value={rtiPio} onChange={e => setRtiPio(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }} />
+                  <textarea rows={3} value={rtiPio} onChange={e => setRtiPio(e.target.value)} placeholder="e.g. Public Information Officer,\nMinistry of Finance,\nNorth Block, New Delhi" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }} />
                 </label>
                 <label className="input-label">
                   Applicant Address
-                  <input type="text" value={rtiApplicant} onChange={e => setRtiApplicant(e.target.value)} />
+                  <input type="text" value={rtiApplicant} onChange={e => setRtiApplicant(e.target.value)} placeholder="e.g. Ramesh Patel, House 4, Sector 12, Noida, U.P." />
                 </label>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -334,6 +493,7 @@ const GovSuitePages = () => {
                       key={idx}
                       rows={2}
                       value={q}
+                      placeholder="e.g. Please provide the total expenditure on project X in FY 2025-26..."
                       onChange={e => {
                         const next = [...rtiQuestions]
                         next[idx] = e.target.value
@@ -344,7 +504,12 @@ const GovSuitePages = () => {
                   ))}
                   <button onClick={() => setRtiQuestions([...rtiQuestions, ''])} className="btn-secondary" style={{ width: 'max-content', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>+ Add Query</button>
                 </div>
-                <button onClick={handlePrint} className="btn-primary" style={{ width: 'max-content' }}><FiPrinter /> Print Application</button>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button onClick={handlePrint} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiPrinter /> Print Application</button>
+                  <button onClick={handleDownloadRti} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiDownload /> Download Draft</button>
+                  <button onClick={handleSyncRtiToDrive} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiSave /> Sync to Drive</button>
+                </div>
               </div>
 
               {/* RTI Application preview */}
@@ -356,12 +521,12 @@ const GovSuitePages = () => {
                 <div style={{ fontSize: '0.85rem', lineHeight: 1.5, display: 'grid', gap: '0.75rem' }}>
                   <div>
                     <strong>To,</strong><br />
-                    {rtiPio}
+                    {rtiPio || 'PIO Address Details'}
                   </div>
 
                   <div>
                     <strong>1. Name & Address of Applicant:</strong><br />
-                    {rtiApplicant}
+                    {rtiApplicant || 'Applicant Address Details'}
                   </div>
 
                   <div>
@@ -449,9 +614,12 @@ const GovSuitePages = () => {
                   rows={8}
                   value={transInput}
                   onChange={(e) => setTransInput(e.target.value)}
+                  placeholder="Type official English text here (e.g. please review this note and submit it for approval)..."
                   style={{ width: '100%', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }}
                 />
-                <button className="btn-primary" style={{ marginTop: '1rem' }} onClick={runTranslation}>Translate Glossary</button>
+                <button className="btn-primary" style={{ marginTop: '1rem' }} onClick={runTranslation} disabled={translating}>
+                  {translating ? 'Translating with Gemini...' : 'Translate to Hindi'}
+                </button>
               </div>
               <div>
                 <label className="input-label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Official Rajbhasha (Hindi) Translation</label>
@@ -474,10 +642,19 @@ const GovSuitePages = () => {
                 <textarea
                   rows={10}
                   value={censusCsv}
+                  placeholder={"Block,MalePopulation,FemalePopulation,LiteracyRate\nBlock-A,12500,12100,0.85\nBlock-B,14800,14000,0.79"}
                   onChange={(e) => setCensusCsv(e.target.value)}
                   style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text)' }}
                 />
-                <button className="btn-primary" style={{ marginTop: '1rem' }} onClick={runCensusCalculation}>Format & Summarise Census</button>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                  <button className="btn-primary" onClick={runCensusCalculation}>Format & Summarise Census</button>
+                  {censusResult && (
+                    <>
+                      <button className="btn-secondary" onClick={handleDownloadCensus} title="Download Report"><FiDownload /> Download Report</button>
+                      <button className="btn-secondary" onClick={handleSyncCensusToDrive} title="Sync to Google Drive"><FiSave /> Sync to Drive</button>
+                    </>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="input-label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Census Summary Report</label>

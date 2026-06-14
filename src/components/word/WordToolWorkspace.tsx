@@ -1,17 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import JSZip from 'jszip'
 import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 import type { PdfProgress } from '../../tools/pdf/engine/types'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
 import * as pdfjsLib from 'pdfjs-dist'
+import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 type TabType = 'to-pdf' | 'pdf-to-word' | 'merge' | 'mail-merge'
 
+const getTabFromPath = (path: string): TabType => {
+  if (path.includes('/word/pdf-to-word')) return 'pdf-to-word'
+  if (path.includes('/word/docx-merge') || path.includes('/word/merge')) return 'merge'
+  if (path.includes('/word/mail-merge')) return 'mail-merge'
+  return 'to-pdf'
+}
+
 const WordToolWorkspace = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('to-pdf')
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState<TabType>(() => getTabFromPath(window.location.pathname))
   const { addRecentFile } = useRecentFiles()
+
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname))
+  }, [location.pathname])
 
   // Common UI State
   const [feedback, setFeedback] = useState('Select files to begin.')
@@ -34,29 +48,65 @@ const WordToolWorkspace = () => {
   const [mailTemplate, setMailTemplate] = useState('Dear {{Name}},\n\nThis is to notify you that your document application regarding {{Subject}} has been approved.\n\nBest regards,\nAdministrative Officer')
   // Variables derived dynamically if needed
 
+  // --- Helper to extract paragraphs from DOCX XML ---
+  const extractDocxParagraphs = async (file: File): Promise<string[]> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const zip = await JSZip.loadAsync(arrayBuffer)
+      const docXmlText = await zip.file("word/document.xml")?.async("text")
+      if (!docXmlText) return []
+      
+      const parser = new DOMParser()
+      const xmlDoc = parser.parseFromString(docXmlText, "application/xml")
+      const paragraphs = xmlDoc.getElementsByTagName("w:p")
+      const result: string[] = []
+      
+      for (let i = 0; i < paragraphs.length; i++) {
+        const p = paragraphs[i]
+        const textNodes = p.getElementsByTagName("w:t")
+        let pText = ""
+        for (let j = 0; j < textNodes.length; j++) {
+          pText += textNodes[j].textContent || ""
+        }
+        result.push(pText)
+      }
+      return result
+    } catch (err) {
+      console.error("Error parsing docx file", err)
+      const text = await file.text()
+      return text.split('\n')
+    }
+  }
+
   // --- Word to PDF Simulation ---
   const handleWordToPdf = async () => {
     if (wordFiles.length === 0) return setFeedback('Please select a file first.')
     setProcessing(true)
     setProgress({ label: 'Converting document structure...', value: 40 })
 
-    setTimeout(() => {
-      // Simulate downloadable PDF blob
+    setTimeout(async () => {
       const dummyContent = 'SHREEDESK WORD TO PDF CONVERTED DOCUMENT\n'
       const blob = new Blob([dummyContent], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = wordFiles[0].name.replace(/\.[a-z0-9]+$/i, '.pdf')
+      const outputName = 'ShreeDesk_' + wordFiles[0].name.replace(/\.[a-z0-9]+$/i, '.pdf')
+      a.download = outputName
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
 
-      setFeedback('Successfully converted Word document to PDF.')
+      // Sync to Google Drive
+      const token = getGoogleToken()
+      if (token) {
+        await uploadFileToDrive('PDF', outputName, blob)
+      }
+
+      setFeedback(`Successfully converted Word document to PDF: ${outputName}`)
       setProcessing(false)
       setProgress(null)
-      addRecentFile(wordFiles[0].name, 'Converted', wordFiles[0].size, 0, '/word')
+      addRecentFile(outputName, 'Converted', wordFiles[0].size, 0, '/word')
     }, 1500)
   }
 
@@ -88,14 +138,21 @@ const WordToolWorkspace = () => {
           const url = URL.createObjectURL(docBlob)
           const a = document.createElement('a')
           a.href = url
-          a.download = pdfFile.name.replace(/\.pdf$/i, '.doc')
+          const outputName = 'ShreeDesk_' + pdfFile.name.replace(/\.pdf$/i, '.doc')
+          a.download = outputName
           document.body.appendChild(a)
           a.click()
           a.remove()
           URL.revokeObjectURL(url)
 
-          setFeedback(`Extracted text from PDF and downloaded Word outline.`)
-          addRecentFile(pdfFile.name, 'Converted', pdfFile.size, 0, '/word')
+          // Sync to Google Drive
+          const token = getGoogleToken()
+          if (token) {
+            await uploadFileToDrive('Word', outputName, docBlob)
+          }
+
+          setFeedback(`Extracted text from PDF and downloaded Word outline: ${outputName}`)
+          addRecentFile(outputName, 'Converted', pdfFile.size, 0, '/word')
         } catch (err) {
           setFeedback('Error parsing PDF structure.')
         } finally {
@@ -113,33 +170,94 @@ const WordToolWorkspace = () => {
   const handleMergeFiles = async () => {
     if (mergeFiles.length === 0) return setFeedback('Select files to merge.')
     setProcessing(true)
-    setProgress({ label: 'Consolidating document streams...', value: 50 })
+    setProgress({ label: 'Consolidating document streams...', value: 30 })
 
     try {
-      let mergedText = `SHREEDESK DOCUMENT CONSOLIDATION\n`
-      mergedText += `Merged Date: ${new Date().toLocaleDateString()}\n`
-      mergedText += `==========================================\n\n`
+      let mergedHtml = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <title>ShreeDesk Merged Document</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    body {
+      font-family: 'Calibri', 'Arial', sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      padding: 20px;
+    }
+    p {
+      margin: 0 0 10pt 0;
+    }
+    .file-header {
+      border-bottom: 2px solid #8b5cf6;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      color: #8b5cf6;
+      font-size: 14pt;
+      font-weight: bold;
+    }
+    .meta-header {
+      font-size: 9pt;
+      color: #666;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>SHREEDESK DOCUMENT CONSOLIDATION</h2>
+  <div class="meta-header">Merged Date: ${new Date().toLocaleDateString()}</div>
+`
 
       for (let i = 0; i < mergeFiles.length; i++) {
         const file = mergeFiles[i]
-        const text = await file.text()
-        mergedText += `FILE ${i + 1}: ${file.name}\n`
-        mergedText += `------------------------------------------\n`
-        mergedText += text + `\n\n`
+        setProgress({ label: `Processing ${file.name}...`, value: Math.round(((i + 1) / mergeFiles.length) * 70) })
+        
+        mergedHtml += `<div class="file-header">File ${i + 1}: ${file.name}</div>`
+        
+        const isDocx = file.name.endsWith('.docx')
+        if (isDocx) {
+          const paras = await extractDocxParagraphs(file)
+          paras.forEach(para => {
+            mergedHtml += `<p>${para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+          })
+        } else {
+          const text = await file.text()
+          const lines = text.split('\n')
+          lines.forEach(line => {
+            mergedHtml += `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+          })
+        }
       }
 
-      const blob = new Blob([mergedText], { type: 'application/msword;charset=utf-8' })
+      mergedHtml += `</body></html>`
+
+      const blob = new Blob([mergedHtml], { type: 'application/msword;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'merged_documents.doc'
+      const outputName = 'ShreeDesk_Merged_Documents.doc'
+      a.download = outputName
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
 
-      setFeedback('Documents merged successfully.')
-      addRecentFile('merged_documents.doc', 'Merged', 0, 0, '/word')
+      // Sync to Google Drive
+      const token = getGoogleToken()
+      if (token) {
+        await uploadFileToDrive('Word', outputName, blob)
+      }
+
+      setFeedback(`Documents merged successfully into: ${outputName}`)
+      addRecentFile(outputName, 'Merged', blob.size, 0, '/word')
     } catch (err) {
       setFeedback('Error merging documents.')
     } finally {
@@ -170,8 +288,6 @@ const WordToolWorkspace = () => {
         }
         setCsvRows(rows)
         setFeedback(`Parsed CSV database: ${rows.length} records found.`)
-
-        // Parse completed
       }
     }
     reader.readAsText(file)
@@ -193,7 +309,6 @@ const WordToolWorkspace = () => {
           filledText = filledText.replace(regex, row[header])
         })
 
-        // File name for the letter
         const docName = `letter_${row['Name'] || row['id'] || idx + 1}.txt`
         zip.file(docName, filledText)
       })
@@ -203,14 +318,21 @@ const WordToolWorkspace = () => {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'mail_merge_letters.zip'
+      const outputName = 'ShreeDesk_Mail_Merge_Letters.zip'
+      a.download = outputName
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
 
+      // Sync to Google Drive
+      const token = getGoogleToken()
+      if (token) {
+        await uploadFileToDrive('Word', outputName, blob)
+      }
+
       setFeedback(`Generated ZIP archive with ${csvRows.length} filled templates.`)
-      addRecentFile('mail_merge_letters.zip', 'Generated', blob.size, 0, '/word')
+      addRecentFile(outputName, 'Generated', blob.size, 0, '/word')
     } catch (e) {
       setFeedback('Error running mail merge.')
     } finally {

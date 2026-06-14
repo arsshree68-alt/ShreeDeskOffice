@@ -14,14 +14,15 @@ const AiWorkspace     = lazy(() => import('../pages/ai/AiWorkspace'))
 const GovSuitePages   = lazy(() => import('../pages/govt/GovSuitePages'))
 const DeveloperSuite  = lazy(() => import('../pages/developer/DeveloperSuite'))
 const PptSuitePages   = lazy(() => import('../pages/ppt/PptSuitePages'))
+const ShortcutsPage   = lazy(() => import('../pages/developer/ShortcutsPage'))
+const NotesPage       = lazy(() => import('../pages/notes/NotesPage'))
+const LoginPage       = lazy(() => import('../pages/auth/LoginPage'))
 
 /* ── PDF tool pages ───────────────────────────────────────────────── */
-const PdfMergePage    = lazy(() => import('../pages/pdf/tools/PdfMergePage'))
-const PdfSplitPage    = lazy(() => import('../pages/pdf/tools/PdfSplitPage'))
-const PdfCompressPage = lazy(() => import('../pages/pdf/tools/PdfCompressPage'))
+const PdfToolPage = lazy(() => import('../pages/pdf/tools/PdfToolPage'))
 
 /* ── Excel tool pages ─────────────────────────────────────────────── */
-const ExcelMergePage = lazy(() => import('../pages/excel/tools/ExcelMergePage'))
+const ExcelToolPage = lazy(() => import('../pages/excel/tools/ExcelToolPage'))
 
 /* ── Shared loading fallback ──────────────────────────────────────── */
 const Loading = ({ label = 'Loading ShreeDeskOS Workspace…' }: { label?: string }) => (
@@ -51,15 +52,11 @@ const AppRoutes = () => (
 
       {/* PDF Suite */}
       <Route path="pdf" element={S(PdfPage, 'Loading PDF Suite…')} />
-      <Route path="pdf/merge"        element={S(PdfMergePage,    'Loading Merge PDF…')} />
-      <Route path="pdf/split"        element={S(PdfSplitPage,    'Loading Split PDF…')} />
-      <Route path="pdf/compress"     element={S(PdfCompressPage, 'Loading Compress PDF…')} />
-      <Route path="pdf/*"            element={S(PdfPage, 'Loading PDF Suite…')} />
+      <Route path="pdf/:toolId" element={S(PdfToolPage, 'Loading PDF Tool…')} />
 
       {/* Excel Suite */}
       <Route path="excel" element={S(ExcelPage, 'Loading Excel Suite…')} />
-      <Route path="excel/merge" element={S(ExcelMergePage, 'Loading Merge Spreadsheets…')} />
-      <Route path="excel/*"     element={S(ExcelPage, 'Loading Excel Suite…')} />
+      <Route path="excel/:toolId" element={S(ExcelToolPage, 'Loading Excel Tool…')} />
 
       {/* Word Suite */}
       <Route path="word"  element={S(WordPage, 'Loading Word Workspace…')} />
@@ -84,6 +81,15 @@ const AppRoutes = () => (
       {/* Developer Suite */}
       <Route path="developer" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
       <Route path="developer/*" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
+
+      {/* Shortcuts Guide */}
+      <Route path="shortcuts" element={S(ShortcutsPage, 'Loading Shortcuts Manual…')} />
+
+      {/* Notes Suite */}
+      <Route path="notes" element={S(NotesPage, 'Loading Notes Workspace…')} />
+
+      {/* Login Page */}
+      <Route path="login" element={S(LoginPage, 'Loading Login screen…')} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

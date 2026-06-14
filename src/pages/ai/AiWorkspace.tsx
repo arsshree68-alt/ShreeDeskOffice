@@ -5,6 +5,7 @@ import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
 // PDF.js imports for client-side PDF parsing
 import * as pdfjsLib from 'pdfjs-dist'
+import { uploadFileToDrive } from '../../utils/googleDrive'
 
 // Set up worker source for pdfjs
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
@@ -210,7 +211,7 @@ const AiWorkspace = () => {
         const data = await response.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
         setReportResult(text)
-        addRecentFile(`ai_${reportType}.doc`, 'Generated', text.length, 0, '/ai')
+        addRecentFile(`ShreeDesk_AI_${reportType}.doc`, 'Generated', text.length, 0, '/ai')
       } catch (err) {
         setReportResult('Error generating report.')
       } finally {
@@ -230,7 +231,7 @@ const AiWorkspace = () => {
         }
         setReportResult(text)
         setReportLoading(false)
-        addRecentFile(`ai_${reportType}.doc`, 'Generated', text.length, 0, '/ai')
+        addRecentFile(`ShreeDesk_AI_${reportType}.doc`, 'Generated', text.length, 0, '/ai')
       }, 1500)
     }
   }
@@ -286,6 +287,35 @@ const AiWorkspace = () => {
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
+  }
+
+  const syncReportToDrive = async () => {
+    if (!reportResult) return
+    const blob = new Blob([reportResult], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_AI_${reportType}.txt`
+    const res = await uploadFileToDrive('Word', fileName, blob)
+    alert(res.message)
+  }
+
+  const downloadContentFile = () => {
+    if (!contentResult) return
+    const blob = new Blob([contentResult], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ShreeDesk_AI_${contentType}.txt`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const syncContentToDrive = async () => {
+    if (!contentResult) return
+    const blob = new Blob([contentResult], { type: 'text/plain;charset=utf-8' })
+    const fileName = `ShreeDesk_AI_${contentType}.txt`
+    const res = await uploadFileToDrive('Word', fileName, blob)
+    alert(res.message)
   }
 
   return (
@@ -375,6 +405,24 @@ const AiWorkspace = () => {
 
         {/* Content Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '520px' }}>
+          
+          {!hasApiKey && (
+            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '1.25rem', borderRadius: '1rem', color: 'var(--text)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }} className="glass">
+              <h4 style={{ margin: 0, color: 'var(--accent)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                🔑 Activating AI Workspace: Free Gemini API Key Guide
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+                ShreeDeskOffice uses Google Gemini's lightning-fast models client-side to read documents, summarize data, and write reports. To protect your privacy, we don't route calls through our servers. Follow these quick steps to get your own <strong>100% free</strong> API key:
+              </p>
+              <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.825rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', color: 'var(--text-muted)' }}>
+                <li>Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}>Google AI Studio</a>.</li>
+                <li>Sign in with any standard Google/Gmail account.</li>
+                <li>Click the blue <strong>"Get API Key"</strong> button at the top left.</li>
+                <li>Click <strong>"Create API Key"</strong> and copy the generated key.</li>
+                <li>Click the <strong>Settings (Gear Icon)</strong> in the top header of ShreeDesk, paste your key, and click Save!</li>
+              </ol>
+            </div>
+          )}
 
           {/* 1. Document Chat Workspace */}
           {activeWorkspace === 'chat' && (
@@ -556,6 +604,7 @@ const AiWorkspace = () => {
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button onClick={() => navigator.clipboard.writeText(reportResult)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Copy</button>
                       <button onClick={downloadReportFile} className="btn-primary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Download txt</button>
+                      <button onClick={syncReportToDrive} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Sync to Drive</button>
                     </div>
                   )}
                 </div>
@@ -618,7 +667,11 @@ const AiWorkspace = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label className="input-label" style={{ fontWeight: 600 }}>Draft Preview</label>
                   {contentResult && (
-                    <button onClick={() => navigator.clipboard.writeText(contentResult)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Copy text</button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => navigator.clipboard.writeText(contentResult)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Copy text</button>
+                      <button onClick={downloadContentFile} className="btn-primary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Download txt</button>
+                      <button onClick={syncContentToDrive} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Sync to Drive</button>
+                    </div>
                   )}
                 </div>
                 <textarea

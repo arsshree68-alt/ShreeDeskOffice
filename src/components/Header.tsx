@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiMenu, FiDownload, FiSun, FiMoon, FiSettings } from 'react-icons/fi'
 import { SearchBar } from './ui'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { useTheme } from '../context/ThemeContext'
+import { getGoogleToken, getGoogleProfile, logoutGoogle, type GoogleProfile } from '../utils/googleDrive'
 
 interface HeaderProps {
   toggleSidebar?: () => void
@@ -13,6 +15,13 @@ interface HeaderProps {
 const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) => {
   const { theme, toggleTheme } = useTheme()
   const { canInstall, promptInstall } = useInstallPrompt()
+  const [googleUser, setGoogleUser] = useState<GoogleProfile | null>(null)
+  const [googleToken, setGoogleToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    setGoogleUser(getGoogleProfile())
+    setGoogleToken(getGoogleToken())
+  }, [])
 
   return (
     <header className="app-header glass" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -52,7 +61,7 @@ const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) 
       >
         <div style={{ pointerEvents: 'none', position: 'relative' }}>
           <SearchBar
-            placeholder="Search tools... (Ctrl + K)"
+            placeholder="Search tools..."
             value=""
             onChange={() => {}}
           />
@@ -77,6 +86,53 @@ const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) 
       </div>
 
       <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Google SSO Status */}
+        {googleToken ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', padding: '0.2rem 0.5rem', borderRadius: '20px', background: 'var(--panel-bg)' }}>
+            <img 
+              src={googleUser?.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=40&h=40'} 
+              alt="Profile" 
+              style={{ width: '28px', height: '28px', borderRadius: '50%' }}
+              title={googleUser?.name || 'Google Account Connected'}
+            />
+            <button
+              onClick={() => {
+                logoutGoogle()
+                setGoogleUser(null)
+                setGoogleToken(null)
+                window.location.reload()
+              }}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                color: 'var(--accent)',
+                fontWeight: 600,
+                padding: '0 0.25rem'
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <Link 
+            to="/login"
+            style={{
+              textDecoration: 'none',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--accent)',
+              border: '1.5px solid var(--accent)',
+              padding: '0.4rem 0.9rem',
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+            }}
+            className="hover-lift"
+          >
+            Sign In
+          </Link>
+        )}
         {/* PWA Install App Button */}
         {canInstall && (
           <button 
