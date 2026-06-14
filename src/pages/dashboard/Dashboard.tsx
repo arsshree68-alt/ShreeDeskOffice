@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+
 import { 
-  FiZap, FiFile, FiShield, FiStar, FiActivity, 
+  FiZap, FiFile, FiShield, FiStar, 
   FiClock, FiCpu, FiLayers, FiSliders, 
-  FiCheckCircle, FiChevronRight, FiFolderPlus, FiDownload 
+  FiChevronRight, FiFolderPlus
 } from 'react-icons/fi'
 import { useFavorites } from '../../hooks/useFavorites'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
@@ -35,43 +35,9 @@ const Dashboard = () => {
   }, [])
 
 
-  // Calculate statistics from local files
-  const stats = useMemo(() => {
-    const totalProcessed = recentFiles.length
-    const storageSaved = recentFiles.reduce((sum, item) => sum + (item.sizeSaved || 0), 0)
-    const exportsCreated = recentFiles.filter(item => 
-      ['Merged', 'Compressed', 'Generated', 'Validated'].includes(item.action)
-    ).length
+  
 
-    return {
-      processed: totalProcessed,
-      saved: formatFileSize(storageSaved),
-      exports: exportsCreated
-    }
-  }, [recentFiles])
-
-  // Get activity stats grouped by date for past 7 days
-  const chartData = useMemo(() => {
-    const data: Record<string, number> = {}
-    const today = new Date()
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(today.getDate() - i)
-      const label = d.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })
-      data[label] = 0
-    }
-    recentFiles.forEach(file => {
-      const fileDate = new Date(file.timestamp)
-      const label = fileDate.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })
-      if (label in data) {
-        data[label]++
-      }
-    })
-    return Object.entries(data).map(([date, count]) => ({
-      date,
-      count
-    }))
-  }, [recentFiles])
+  
 
   // Get matching tools based on categories
   const filteredTools = useMemo(() => {
