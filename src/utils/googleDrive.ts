@@ -44,6 +44,21 @@ export const loginWithGoogle = (
     return
   }
 
+  if (clientId === '23000000000-dummyclientid.apps.googleusercontent.com') {
+    setTimeout(() => {
+      const mockToken = 'mock_google_token_' + Date.now()
+      const mockProfile: GoogleProfile = {
+        name: 'Demo User',
+        email: 'demo@shreedeskoffice.com',
+        picture: ''
+      }
+      sessionStorage.setItem('shreedesk-google-token', mockToken)
+      localStorage.setItem('shreedesk-google-profile', JSON.stringify(mockProfile))
+      onSuccess(mockToken, mockProfile)
+    }, 1500)
+    return
+  }
+
   try {
     // @ts-ignore
     const tokenClient = google.accounts.oauth2.initTokenClient({
@@ -189,6 +204,18 @@ export const uploadFileToDrive = async (
       success: false,
       message: 'Not signed in to Google. Please connect your Google account first.'
     }
+  }
+
+  if (token.startsWith('mock_google_token_')) {
+    // Simulate successful upload for demo
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          message: `[Demo Mode] Saved "${fileName}" to Google Drive → ShreeDeskOffice/${category}/`
+        })
+      }, 500)
+    })
   }
 
   try {

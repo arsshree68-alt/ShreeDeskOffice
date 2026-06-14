@@ -4,6 +4,7 @@ import JSZip from 'jszip'
 import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 import type { PdfProgress } from '../../tools/pdf/engine/types'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
+import PdfFileDropzone from '../pdf/PdfFileDropzone'
 import * as pdfjsLib from 'pdfjs-dist'
 import { getGoogleToken, uploadFileToDrive } from '../../utils/googleDrive'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
@@ -287,13 +288,13 @@ const WordToolWorkspace = () => {
         if (isDocx) {
           const paras = await extractDocxParagraphs(file)
           paras.forEach(para => {
-            mergedHtml += `<p>${para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+            mergedHtml += `<p style="font-family: Calibri, Arial, sans-serif; font-size: 11pt; margin: 0 0 10pt 0;">${para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
           })
         } else {
           const text = await file.text()
           const lines = text.split('\n')
           lines.forEach(line => {
-            mergedHtml += `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+            mergedHtml += `<p style="font-family: Calibri, Arial, sans-serif; font-size: 11pt; margin: 0 0 10pt 0;">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
           })
         }
       }
@@ -424,11 +425,8 @@ const WordToolWorkspace = () => {
       {/* 1. Word to PDF Tab */}
       {activeTab === 'to-pdf' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
-              <input type="file" accept=".doc,.docx,.txt" onChange={(e) => e.target.files && setWordFiles(Array.from(e.target.files))} />
-              Upload Word File
-            </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+            <PdfFileDropzone mode="word" multiple={false} onFilesSelected={(files) => setWordFiles(files)} />
             <span style={{ fontSize: '0.85rem' }}>
               {wordFiles.length > 0 ? `${wordFiles[0].name} (${formatFileSize(wordFiles[0].size)})` : 'No file loaded.'}
             </span>
@@ -440,11 +438,8 @@ const WordToolWorkspace = () => {
       {/* 2. PDF to Word Tab */}
       {activeTab === 'pdf-to-word' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
-              <input type="file" accept=".pdf" onChange={(e) => e.target.files?.[0] && setPdfFile(e.target.files[0])} />
-              Upload PDF File
-            </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+            <PdfFileDropzone mode="pdf" multiple={false} onFilesSelected={(files) => setPdfFile(files[0])} />
             <span style={{ fontSize: '0.85rem' }}>
               {pdfFile ? `${pdfFile.name} (${formatFileSize(pdfFile.size)})` : 'No file loaded.'}
             </span>
@@ -456,11 +451,8 @@ const WordToolWorkspace = () => {
       {/* 3. Merge Documents Tab */}
       {activeTab === 'merge' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
-              <input type="file" multiple accept=".txt,.doc,.docx" onChange={(e) => e.target.files && setMergeFiles(Array.from(e.target.files))} />
-              Select Files
-            </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+            <PdfFileDropzone mode="word" multiple={true} onFilesSelected={(files) => setMergeFiles(files)} />
             <span style={{ fontSize: '0.85rem' }}>
               {mergeFiles.length > 0 ? `${mergeFiles.length} files selected.` : 'No files loaded.'}
             </span>
@@ -473,11 +465,8 @@ const WordToolWorkspace = () => {
       {activeTab === 'mail-merge' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }} className="responsive-2col">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
-                <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleCsvUpload(e.target.files[0])} />
-                Load CSV database
-              </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+              <PdfFileDropzone mode="excel" multiple={false} onFilesSelected={(files) => handleCsvUpload(files[0])} />
               <span style={{ fontSize: '0.85rem' }}>
                 {csvFile ? csvFile.name : 'No database loaded.'}
               </span>

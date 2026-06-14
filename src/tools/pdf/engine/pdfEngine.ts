@@ -99,7 +99,10 @@ export const mergePdfFiles = async (
     onProgress?.({ label: `Merging ${file.name}`, value: Math.round((fileIndex / files.length) * 80) })
     const inputPdf = await PDFDocument.load(await readAsArrayBuffer(file))
     const copiedPages = await outputPdf.copyPages(inputPdf, inputPdf.getPageIndices())
-    copiedPages.forEach((page) => outputPdf.addPage(page))
+    for (let i = 0; i < copiedPages.length; i++) {
+      outputPdf.addPage(copiedPages[i])
+      if (i % 5 === 0) await new Promise(r => setTimeout(r, 0)) // Yield to UI
+    }
   }
 
   onProgress?.({ label: 'Saving merged PDF', value: 92 })
@@ -122,7 +125,8 @@ export const mergeSelectedPages = async (
     if (!pageIndexes || pageIndexes.length === 0) continue
     const zeroBased = pageIndexes.map((p) => Math.max(0, p))
     const copiedPages = await outputPdf.copyPages(inputPdf, zeroBased)
-    copiedPages.forEach((page, idx) => {
+    for (let idx = 0; idx < copiedPages.length; idx++) {
+      const page = copiedPages[idx]
       // apply per-page rotation if provided (pageIndexes are zero-based)
       const sourceIndex = zeroBased[idx]
       const rotationDeg = pageRotations?.[sourceIndex]
@@ -130,7 +134,8 @@ export const mergeSelectedPages = async (
         page.setRotation(degrees((rotationDeg + page.getRotation().angle) % 360))
       }
       outputPdf.addPage(page)
-    })
+      if (idx % 5 === 0) await new Promise(r => setTimeout(r, 0)) // Yield to UI
+    }
   }
 
   onProgress?.({ label: 'Saving merged PDF', value: 92 })
@@ -153,6 +158,7 @@ export const splitPdfFile = async (
     singlePdf.addPage(page)
     const bytes = await singlePdf.save({ useObjectStreams: true })
     zip.file(`${getBaseName(file.name)}-page-${index + 1}.pdf`, bytes)
+    await new Promise(r => setTimeout(r, 0)) // Yield to UI
   }
 
   const blob = await zip.generateAsync({ type: 'blob', mimeType: zipMimeType })
@@ -299,6 +305,7 @@ export const organizePdfFile = async (
       }
       outputPdf.addPage(copied)
     }
+    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0)) // Yield to UI
   }
   const bytes = await outputPdf.save({ useObjectStreams: true })
   return { blob: blobFromBytes(bytes, pdfMimeType), fileName: 'ShreeDesk_Organized_PDF.pdf' }
@@ -477,6 +484,7 @@ export const pdfToImages = async (
     const blob = await canvasToBlob(canvas, mime, format === 'png' ? undefined : quality)
     const ext = format === 'jpeg' ? 'jpg' : format
     zip.file(`${getBaseName(file.name)}-page-${pageNumber}.${ext}`, blob)
+    await new Promise(r => setTimeout(r, 0)) // Yield to UI
   }
 
   document.cleanup()
@@ -509,6 +517,9 @@ export const convertWordToPdf = async (
       }
       page.drawText(line.substring(0, 120), { x: margin, y: y - fontSize, size: fontSize, font })
       y -= fontSize + 4
+      
+      // Every 100 lines yield to UI
+      if (Math.random() < 0.05) await new Promise(r => setTimeout(r, 0))
     }
     onProgress?.({ label: 'Generating PDF', value: 70 })
     const bytes = await pdfDoc.save({ useObjectStreams: true })
@@ -591,6 +602,8 @@ export const convertWordToPdf = async (
           page.drawText(currentLine, { x: marginPx, y, size: paraFontSize, font: chosenFont, color: rgb(0.1, 0.1, 0.1) })
           y -= lineSpacing * 1.3
         }
+        
+        if (pi % 10 === 0) await new Promise(r => setTimeout(r, 0)) // Yield to UI
       }
 
       onProgress?.({ label: 'Saving PDF output...', value: 90 })

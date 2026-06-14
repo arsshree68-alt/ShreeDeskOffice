@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { DatasetSummary } from '../../components/ui/DatasetSummary'
+import PdfFileDropzone from '../../components/pdf/PdfFileDropzone'
 import {
   exportCsv,
   exportWorkbook,
@@ -157,11 +158,9 @@ const MergeExcelTool = () => {
     }
   }
 
-  const handleInputFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = event.target.files
+  const handleInputFiles = async (fileList: File[]) => {
     if (!fileList?.length) return
     await loadFiles(Array.from(fileList))
-    event.target.value = ''
   }
 
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
@@ -361,29 +360,11 @@ const MergeExcelTool = () => {
         </div>
       </div>
 
-      <div className="tool-controls">
-        <label className="file-upload">
-          Add spreadsheet files
-          <input
-            type="file"
-            accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.tsv"
-            multiple
-            onChange={handleInputFiles}
-            disabled={processing}
-          />
-        </label>
-
-        <button type="button" className="btn-primary" onClick={runMerge} disabled={processing || files.length === 0}>
+      <div className="tool-controls" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+        <PdfFileDropzone mode="excel" multiple={true} disabled={processing} onFilesSelected={handleInputFiles} />
+        <button type="button" className="btn-primary" onClick={runMerge} disabled={processing || files.length === 0} style={{ width: 'max-content' }}>
           {processing ? 'Processing...' : 'Run Merge'}
         </button>
-      </div>
-
-      <div
-        className="drop-area"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={handleDrop}
-      >
-        Drag & drop spreadsheets here, or click to browse.
       </div>
 
       {files.length > 0 && (

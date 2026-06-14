@@ -2,21 +2,23 @@ import { useCallback, useMemo, useState } from 'react'
 import type { PdfToolMode } from '../../tools/pdf/engine/types'
 
 interface PdfFileDropzoneProps {
-  mode: PdfToolMode
+  mode: PdfToolMode | 'word'
   multiple: boolean
   disabled?: boolean
   onFilesSelected: (files: File[]) => void
 }
 
-const acceptedTypes: Record<PdfToolMode, string> = {
+const acceptedTypes: Record<PdfToolMode | 'word', string> = {
   pdf: '.pdf,application/pdf',
   image: '.jpg,.jpeg,.png,image/jpeg,image/png',
   excel: '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',
+  word: '.doc,.docx,.rtf,.txt,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain'
 }
 
-const isAcceptedFile = (file: File, mode: PdfToolMode) => {
+const isAcceptedFile = (file: File, mode: PdfToolMode | 'word') => {
   if (mode === 'pdf') return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
   if (mode === 'excel') return ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'].includes(file.type) || /\.(xlsx|xls|csv)$/i.test(file.name)
+  if (mode === 'word') return file.name.toLowerCase().match(/\.(docx?|rtf|txt)$/i) !== null
   return ['image/jpeg', 'image/png'].includes(file.type) || /\.(jpe?g|png)$/i.test(file.name)
 }
 
@@ -26,6 +28,7 @@ const PdfFileDropzone = ({ mode, multiple, disabled = false, onFilesSelected }: 
     () => {
       if (mode === 'pdf') return 'Drop PDF files here or browse from your device.'
       if (mode === 'excel') return 'Drop spreadsheet files (XLSX, XLS, CSV) here or browse from your device.'
+      if (mode === 'word') return 'Drop Word documents (DOCX, DOC, TXT) here or browse from your device.'
       return 'Drop JPG/PNG images here or browse from your device.'
     },
     [mode],
