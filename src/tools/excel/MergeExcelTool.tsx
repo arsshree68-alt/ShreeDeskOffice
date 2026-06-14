@@ -163,13 +163,7 @@ const MergeExcelTool = () => {
     await loadFiles(Array.from(fileList))
   }
 
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    if (event.dataTransfer.files?.length) {
-      await loadFiles(Array.from(event.dataTransfer.files))
-    }
-  }
+
 
   const toggleSheetSelection = (fileId: string, sheetName: string) => {
     setFiles((previous) =>

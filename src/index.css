@@ -883,6 +883,13 @@ a {
 .btn-primary:hover,
 .btn-primary:focus-visible {
   background: var(--accent-dark);
+  box-shadow: 0 4px 12px rgba(201, 100, 66, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 4px rgba(201, 100, 66, 0.15);
 }
 
 .tool-summary {
@@ -1110,9 +1117,14 @@ a {
 .pdf-tool-card:hover,
 .pdf-tool-card:focus-visible,
 .pdf-tool-card.active {
-  transform: translateY(-1px);
-  border-color: rgba(201, 100, 66, 0.42);
-  background: rgba(201, 100, 66, 0.09);
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px rgba(201, 100, 66, 0.15);
+  transform: translateY(-3px);
+  background: var(--card-bg, #ffffff);
+}
+.pdf-tool-card:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(201, 100, 66, 0.10);
 }
 
 .pdf-tool-icon {
@@ -1460,9 +1472,13 @@ a {
 .suite-tool-card:hover,
 .suite-tool-card:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.12);
-  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(201, 100, 66, 0.15);
+  transform: translateY(-4px);
   outline: none;
+}
+.suite-tool-card:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(201, 100, 66, 0.10);
 }
 .suite-tool-card-icon {
   font-size: 1.5rem;
