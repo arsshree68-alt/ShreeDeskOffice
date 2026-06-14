@@ -134,11 +134,11 @@ const AiWorkspace = () => {
       } else {
         // Fallback for Word files (metadata extraction)
         setTimeout(() => {
-          const text = `Document Title: ${file.name}\nSize: ${formatFileSize(file.size)}\nMetadata: Structured office document schema layout.`
+          const text = `Document Title: ${file.name}\nSize: ${formatFileSize(file.size)}\n`
           setFileTextContent(text)
           setChatMessages(prev => [
             ...prev,
-            { sender: 'ai', text: `Loaded "${file.name}" (Office Document). Extracted document variables. Ready to query.`, timestamp: new Date() }
+            { sender: 'ai', text: `Loaded "${file.name}". Ready to query.`, timestamp: new Date() }
           ])
           setIsParsingFile(false)
         }, 1000)
@@ -187,33 +187,10 @@ const AiWorkspace = () => {
         setChatLoading(false)
       }
     } else {
-      // Local Sandbox Simulation Mode (TF-IDF search / keyword retrieval)
       setTimeout(() => {
-        let aiText = ''
-
-        if (fileTextContent) {
-          // Look for keywords in file content
-          const queryWords = userMsg.toLowerCase().split(' ').filter(w => w.length > 3)
-          const sentences = fileTextContent.split(/[.!?\n]/).filter(s => s.trim().length > 10)
-          
-          const matchingSentences = sentences.filter(s => 
-            queryWords.some(word => s.toLowerCase().includes(word))
-          ).slice(0, 3)
-
-          if (matchingSentences.length > 0) {
-            aiText = `[Local Offline Match] I scanned the document for references. Here are matching lines:\n\n` + 
-              matchingSentences.map(s => `• "...${s.trim()}..."`).join('\n') + 
-              `\n\n*(Note: For complete natural language summaries and generative answers, please click the gear icon in the header and paste your Gemini API Key).*`
-          } else {
-            aiText = `[Local Offline Search] I scanned the document but found no direct sentence matches for terms like "${queryWords.join(', ')}". \n\n*Summary of text extracted:* Document contains ${fileTextContent.split(' ').length} words. First sentences: "${fileTextContent.substring(0, 180)}..."\n\n*(Configure your Gemini API key in settings to unlock full generative capabilities).*`
-          }
-        } else {
-          aiText = `Hello! You are operating in offline Sandbox Mode. I can parse files locally and search them for terms. \n\nTo have open-ended conversations, draft government summaries, or build analysis tables, click the **Settings** cog icon in the top right header and input a free **Gemini API Key**.`
-        }
-
-        setChatMessages(prev => [...prev, { sender: 'ai', text: aiText, timestamp: new Date() }])
+        setChatMessages(prev => [...prev, { sender: 'ai', text: 'Please configure your Gemini API key in Settings to use the AI Workspace.', timestamp: new Date() }])
         setChatLoading(false)
-      }, 1200)
+      }, 500)
     }
   }
 
@@ -243,21 +220,10 @@ const AiWorkspace = () => {
         setReportLoading(false)
       }
     } else {
-      // Mock generation templates
       setTimeout(() => {
-        let text = ''
-        const dateStr = new Date().toLocaleDateString()
-        if (reportType === 'office-note') {
-          text = `DEPARTMENT OF PERSONNEL & TRAINING\nOFFICE NOTE\n\nSubject: ${reportSubject}\nRef File: NO. DOPT/2026/A-1101\nDate: ${dateStr}\n\n1. This note concerns ${reportSubject}. The matter has been reviewed in line with general procedural protocols.\n\n2. It is submitted that the proposal contains the following points:\n   - Description: ${reportTopic || 'N/A'}\n   - Departmental Clearance: Approved\n\n3. For favor of perusal and necessary administrative directions.\n\n\n(Abhishek Shrivastava)\nDeputy Secretary`
-        } else if (reportType === 'minutes') {
-          text = `MINUTES OF THE COUNCIL MEETING\n\nDate: ${dateStr}\nSubject: ${reportSubject}\nChairperson: Nodal Director\n\nMembers Present:\n1. Shri A. Shrivastava (DS)\n2. Shri R. Kumar (Under Sec)\n\nDecisions Taken:\n- Discussed: ${reportTopic || 'General administrative matters'}\n- Resolved: Procedural guidelines for ${reportSubject} will be finalized within 7 working days.\n- Actions: Nodal desk to standardise folder layouts.`
-        } else {
-          text = `OFFICIAL STATISTICAL BRIEF\n\nSubject: Analysis on ${reportSubject}\nData source: Department Census aggregates\n\nSummary Table:\n-----------------------------------------\nIndicator               Value     Target\n-----------------------------------------\nActive units            2,450     3,000\nCompleted tasks         89%       95%\n-----------------------------------------\nNotes: ${reportTopic || 'Report drafted from district datasets.'}`
-        }
-        setReportResult(text)
+        setReportResult('Please configure your Gemini API key in Settings to use the AI Report Writer.')
         setReportLoading(false)
-        addRecentFile(`ShreeDesk_AI_${reportType}.doc`, 'Generated', text.length, 0, '/ai')
-      }, 1500)
+      }, 500)
     }
   }
 
@@ -287,17 +253,9 @@ const AiWorkspace = () => {
       }
     } else {
       setTimeout(() => {
-        let text = ''
-        if (contentType === 'press-release') {
-          text = `FOR IMMEDIATE RELEASE\n\nShreeDeskOffice Rolls Out 3.0.0 Platform Upgrade\n\n[Location] — ShreeDesk Office announced today the integration of local sandbox tools and local text index algorithms to streamline document processing. Key features include ${contentKeywords}.\n\n"We are building a browser-based productivity desktop that keeps files completely local," says Abhishek Shrivastava, founder.\n\nMedia contact: press@shreedesk.office`
-        } else if (contentType === 'article') {
-          text = `Title: Navigating Local-First Data Workspaces\n\nIn modern administrative workflows, security is paramount. When dealing with files such as: "${contentKeywords}", traditional cloud services pose leak risks. ShreeDeskOffice 3.0.0 provides a sandboxed environment where 100% of PDF, Excel, and Word calculations run locally. This architecture represents a major shift toward decentralized document tools.`
-        } else {
-          text = `🚀 Introducing ShreeDeskOffice 3.0.0! Transform your browser into a complete productivity workspace. \n\nFeatures:\n- local PDF merge & compress\n- Government notes generator\n- Signature extractors\n\nQuerying on: ${contentKeywords} #Productivity #LocalFirst #Tech #OS`
-        }
-        setContentResult(text)
+        setContentResult('Please configure your Gemini API key in Settings to use the Content Creator.')
         setContentLoading(false)
-      }, 1200)
+      }, 500)
     }
   }
 

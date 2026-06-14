@@ -4,11 +4,9 @@ export interface GoogleProfile {
   picture: string
 }
 
-// Sandbox Client ID. Users can override this in their dashboard settings
-const DEFAULT_CLIENT_ID = '936528340156-placeholder-clientId.apps.googleusercontent.com'
-
+// Users configure their own Google OAuth Client ID via Settings
 export const getClientId = (): string => {
-  return localStorage.getItem('shreedesk-google-client-id') || DEFAULT_CLIENT_ID
+  return localStorage.getItem('shreedesk-google-client-id') || ''
 }
 
 export const setClientId = (id: string): void => {
@@ -33,35 +31,25 @@ export const getGoogleProfile = (): GoogleProfile | null => {
 }
 
 // Trigger Google OAuth2 Sign-In Implicit Flow
-export const loginWithGoogle = (onSuccess: (token: string, profile: GoogleProfile) => void, onFailure: (err: any) => void) => {
+export const loginWithGoogle = (
+  onSuccess: (token: string, profile: GoogleProfile) => void,
+  onFailure: (err: any) => void
+) => {
   const clientId = getClientId()
-  const useSandbox = localStorage.getItem('shreedesk-google-use-sandbox') === 'true'
-  
-  if (useSandbox || clientId.includes('placeholder')) {
-    if (useSandbox) {
-      // Demo Simulation Mode (WOW-factor Mock Login)
-      setTimeout(() => {
-        const mockProfile: GoogleProfile = {
-          name: 'Abhishek Shrivastava (Demo)',
-          email: 'abhishek@shreedesk.office',
-          picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80'
-        }
-        sessionStorage.setItem('shreedesk-google-token', 'mock-sandbox-token-123456')
-        localStorage.setItem('shreedesk-google-profile', JSON.stringify(mockProfile))
-        onSuccess('mock-sandbox-token-123456', mockProfile)
-      }, 1000)
-      return
-    } else {
-      onFailure('Google Client ID is not configured. Please enter a valid Client ID or enable Sandbox Mode on the login page.')
-      return
-    }
+
+  if (!clientId || clientId.trim().length === 0) {
+    onFailure(
+      'No Google Client ID configured. Please add your OAuth Client ID in Settings, or contact the administrator.'
+    )
+    return
   }
 
   try {
     // @ts-ignore
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+      scope:
+        'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
       callback: async (response: any) => {
         if (response.error) {
           onFailure(response)
@@ -71,7 +59,7 @@ export const loginWithGoogle = (onSuccess: (token: string, profile: GoogleProfil
         const token = response.access_token
         sessionStorage.setItem('shreedesk-google-token', token)
 
-        // Fetch User profile details
+        // Fetch user profile details
         try {
           const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${token}` }
@@ -102,23 +90,33 @@ export const logoutGoogle = () => {
 }
 
 // Find Google Drive file/folder by name and parent
-const findDriveItem = async (token: string, name: string, mimeType: string, parentId?: string): Promise<string | null> => {
+const findDriveItem = async (
+  token: string,
+  name: string,
+  mimeType: string,
+  parentId?: string
+): Promise<string | null> => {
   let query = `name = '${name}' and mimeType = '${mimeType}' and trashed = false`
   if (parentId) {
     query += ` and '${parentId}' in parents`
   }
-  
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  
+
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+
   if (!response.ok) return null
   const data = await response.json()
   return data.files?.[0]?.id || null
 }
 
 // Create Google Drive Folder
-const createDriveFolder = async (token: string, name: string, parentId?: string): Promise<string> => {
+const createDriveFolder = async (
+  token: string,
+  name: string,
+  parentId?: string
+): Promise<string> => {
   const metadata = {
     name,
     mimeType: 'application/vnd.google-apps.folder',
@@ -138,7 +136,7 @@ const createDriveFolder = async (token: string, name: string, parentId?: string)
   return data.id
 }
 
-export type DriveCategory = 
+export type DriveCategory =
   | 'PDFs'
   | 'Notes'
   | 'Word Documents'
@@ -150,20 +148,28 @@ export type DriveCategory =
   | 'Converted Files'
   | 'Backups'
 
-// Get or Create targeted directory structure in user Google Drive
-export const getOrCreateFolderTree = async (token: string, category: DriveCategory): Promise<string> => {
-  if (token.startsWith('mock-')) {
-    return 'mock-folder-id-xyz'
-  }
-
-  // 1. Get or Create root 'ShreeDeskOffice' folder
-  let rootFolderId = await findDriveItem(token, 'ShreeDeskOffice', 'application/vnd.google-apps.folder')
+// Get or create targeted directory structure in user Google Drive
+export const getOrCreateFolderTree = async (
+  token: string,
+  category: DriveCategory
+): Promise<string> => {
+  // 1. Get or create root 'ShreeDeskOffice' folder
+  let rootFolderId = await findDriveItem(
+    token,
+    'ShreeDeskOffice',
+    'application/vnd.google-apps.folder'
+  )
   if (!rootFolderId) {
     rootFolderId = await createDriveFolder(token, 'ShreeDeskOffice')
   }
 
-  // 2. Get or Create subfolder corresponding to the category
-  let subFolderId = await findDriveItem(token, category, 'application/vnd.google-apps.folder', rootFolderId)
+  // 2. Get or create subfolder for category
+  let subFolderId = await findDriveItem(
+    token,
+    category,
+    'application/vnd.google-apps.folder',
+    rootFolderId
+  )
   if (!subFolderId) {
     subFolderId = await createDriveFolder(token, category, rootFolderId)
   }
@@ -171,7 +177,7 @@ export const getOrCreateFolderTree = async (token: string, category: DriveCatego
   return subFolderId
 }
 
-// Upload file to specific Google Drive Subfolder
+// Upload file to specific Google Drive subfolder
 export const uploadFileToDrive = async (
   category: DriveCategory,
   fileName: string,
@@ -179,26 +185,15 @@ export const uploadFileToDrive = async (
 ): Promise<{ success: boolean; message: string }> => {
   const token = getGoogleToken()
   if (!token) {
-    return { success: false, message: 'Google Authentication Token missing. Log in first.' }
+    return {
+      success: false,
+      message: 'Not signed in to Google. Please connect your Google account first.'
+    }
   }
 
   try {
-    if (token.startsWith('mock-')) {
-      // Simulate Successful Upload
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            success: true,
-            message: `[Demo Mode] Successfully synced "${fileName}" to Google Drive folder: ShreeDeskOffice/${category}/`
-          })
-        }, 1500)
-      })
-    }
-
-    // Get Target folder ID
     const targetFolderId = await getOrCreateFolderTree(token, category)
 
-    // Multipart upload
     const metadata = {
       name: fileName,
       parents: [targetFolderId]
@@ -208,21 +203,28 @@ export const uploadFileToDrive = async (
     formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
     formData.append('file', fileBlob)
 
-    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      body: formData
-    })
+    const response = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      }
+    )
 
     if (!response.ok) {
       const errText = await response.text()
       return { success: false, message: `Upload failed: ${errText}` }
     }
 
-    return { success: true, message: `Synced "${fileName}" to Google Drive folder: ShreeDeskOffice/${category}/` }
+    return {
+      success: true,
+      message: `Saved "${fileName}" to Google Drive → ShreeDeskOffice/${category}/`
+    }
   } catch (err) {
-    return { success: false, message: err instanceof Error ? err.message : 'Unknown upload error' }
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : 'Unknown upload error'
+    }
   }
 }

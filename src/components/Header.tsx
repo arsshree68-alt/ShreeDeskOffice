@@ -71,13 +71,37 @@ const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) 
       <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         {/* Google SSO Status */}
         {googleToken ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', padding: '0.2rem 0.5rem', borderRadius: '20px', background: 'var(--panel-bg)' }}>
-            <img 
-              src={googleUser?.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=40&h=40'} 
-              alt="Profile" 
-              style={{ width: '28px', height: '28px', borderRadius: '50%' }}
-              title={googleUser?.name || 'Google Account Connected'}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border)', padding: '0.2rem 0.5rem 0.2rem 0.25rem', borderRadius: '20px', background: 'var(--panel-bg)' }}>
+            {googleUser?.picture ? (
+              <img
+                src={googleUser.picture}
+                alt={googleUser.name || 'User profile'}
+                style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                title={googleUser?.name}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: 'var(--accent)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  flexShrink: 0
+                }}
+                title={googleUser?.name || 'Signed in'}
+              >
+                {googleUser?.name ? googleUser.name.charAt(0).toUpperCase() : 'G'}
+              </div>
+            )}
+            <span style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 500, maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {googleUser?.name?.split(' ')[0] || 'Signed In'}
+            </span>
             <button
               onClick={() => {
                 logoutGoogle()
@@ -90,16 +114,17 @@ const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) 
                 background: 'transparent',
                 cursor: 'pointer',
                 fontSize: '0.75rem',
-                color: 'var(--accent)',
+                color: 'var(--text-muted)',
                 fontWeight: 600,
                 padding: '0 0.25rem'
               }}
+              title="Sign out"
             >
-              Sign Out
+              ✕
             </button>
           </div>
         ) : (
-          <Link 
+          <Link
             to="/login"
             style={{
               textDecoration: 'none',
@@ -110,9 +135,15 @@ const Header = ({ toggleSidebar, onSearchClick, onSettingsClick }: HeaderProps) 
               padding: '0.4rem 0.9rem',
               borderRadius: '8px',
               transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
             className="hover-lift"
           >
+            <svg style={{ width: '14px', height: '14px', fill: 'currentColor' }} viewBox="0 0 24 24">
+              <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.94 5.94 0 018 12.571a5.96 5.96 0 015.99-5.943c1.528 0 2.91.564 3.978 1.49l3.12-3.07C19.123 3.327 16.744 2 13.99 2 8.163 2 3.5 6.643 3.5 12.571s4.663 10.572 10.49 10.572c6.07 0 10.077-4.244 10.077-10.237 0-.693-.082-1.218-.184-1.621H12.24z" />
+            </svg>
             Sign In
           </Link>
         )}

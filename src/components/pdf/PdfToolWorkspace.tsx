@@ -335,9 +335,9 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
     <section className="pdf-workspace" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
       
       {/* Top Header */}
-      <div className="pdf-workspace-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: '#ffffff', border: '1px solid #e2e8f0', marginBottom: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '1.25rem', margin: 0, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>{tool.icon} {tool.title}</h2>
-        <span className="pdf-local-badge" style={{ background: '#fff7ed', color: '#ea580c', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>🔒 Local Process</span>
+      <div className="pdf-workspace-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: 'var(--card-bg)', border: '1px solid var(--border)', marginBottom: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>{tool.icon} {tool.title}</h2>
+        <span className="pdf-local-badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>🔒 Local Process</span>
       </div>
 
       {!isReady ? (
@@ -373,10 +373,10 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
           <div className="pdf-workspace-grid">
             
             {/* Left: Preview */}
-            <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E4E0D9' }}>
+            <div style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1F1B16' }}>Document Preview</h3>
-                <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 500, fontSize: '0.85rem', border: '1px solid #E4E0D9' }}>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text)' }}>Document Preview</h3>
+                <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 500, fontSize: '0.85rem', border: '1px solid var(--border)' }}>
                   <input type="file" multiple={tool.acceptsMultiple} accept={tool.mode === 'image' ? 'image/png,image/jpeg,image/webp' : tool.mode === 'excel' ? '.xlsx,.xls,.csv' : 'application/pdf'} style={{ display: 'none' }} onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       handleFilesSelected(Array.from(e.target.files))
@@ -411,7 +411,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
               {tool.mode === 'excel' && imageFiles.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="pdf-preview-summary" style={{ display: 'flex', gap: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div className="pdf-preview-summary" style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
                     <div>
                       <span className="summary-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Workbook</span>
                       <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--text)' }}>{imageFiles[0].name}</strong>
@@ -421,7 +421,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                       <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--text)' }}>{formatFileSize(imageFiles[0].size)}</strong>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--panel-bg)' }}>
                     <span style={{ fontSize: '2rem' }}>📊</span>
                     <div>
                       <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text)' }}>{imageFiles[0].name}</strong>
@@ -540,17 +540,17 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
             </div>
 
             {/* Right: Actions & Settings */}
-            <div className="pdf-workspace-options" style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E4E0D9' }}>
-              <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 600, color: '#1F1B16' }}>Options</h3>
+            <div className="pdf-workspace-options" style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 600, color: 'var(--text)' }}>Options</h3>
               
               {tool.id === 'merge' && pdfInfos.length > 0 && (
-                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ background: 'var(--accent-soft)', border: '1px solid #fed7aa', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 0.25rem 0', color: '#c2410c', fontSize: '0.95rem', fontWeight: 600 }}>Merge Summary</h4>
-                    <span style={{ color: '#ea580c', fontSize: '0.85rem' }}>{pdfInfos.length} files · {pdfInfos.reduce((s, f) => s + f.pageCount, 0)} pages</span>
+                    <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--accent)', fontSize: '0.95rem', fontWeight: 600 }}>Merge Summary</h4>
+                    <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>{pdfInfos.length} files · {pdfInfos.reduce((s, f) => s + f.pageCount, 0)} pages</span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ color: '#c2410c', fontWeight: 600, fontSize: '0.95rem' }}>{formatFileSize(pdfInfos.reduce((s, f) => s + f.size, 0))}</span>
+                    <span style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.95rem' }}>{formatFileSize(pdfInfos.reduce((s, f) => s + f.size, 0))}</span>
                   </div>
                 </div>
               )}
@@ -638,24 +638,24 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                     <label className="select-label" style={{ width: '100%' }}>
                       Custom size ({customCompression}% of original)
                       <input type="range" min={10} max={150} value={customCompression} onChange={(e) => setCustomCompression(Number(e.target.value))} style={{ width: '100%' }} />
-                      <span style={{ fontSize: '0.8rem', color: '#6B6459' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         Below 100% compresses (smaller file, slight quality reduction). Above 100% keeps original quality (no further size increase is produced).
                       </span>
                     </label>
                   )}
 
-                  <div style={{ background: '#F0EDE8', border: '1px solid #E4E0D9', borderRadius: '8px', padding: '1.25rem' }}>
+                  <div style={{ background: 'var(--panel-bg)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ color: '#6B6459' }}>Original Size</span>
-                      <strong style={{ color: '#1F1B16' }}>{formatFileSize(primaryPdf.size)}</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>Original Size</span>
+                      <strong style={{ color: 'var(--text)' }}>{formatFileSize(primaryPdf.size)}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #E4E0D9' }}>
-                      <span style={{ color: '#4A4438' }}>Estimated Output</span>
-                      <strong style={{ color: '#059669' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ color: 'var(--text)' }}>Estimated Output</span>
+                      <strong style={{ color: 'var(--success)' }}>
                         {formatFileSize(Math.round(primaryPdf.size * estimatedCompressionRatio))}
                       </strong>
                     </div>
-                    <div style={{ textAlign: 'center', color: '#059669', fontWeight: 600 }}>
+                    <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 600 }}>
                       {estimatedCompressionRatio <= 1
                         ? `~${Math.round((1 - estimatedCompressionRatio) * 100)}% reduction`
                         : `~${Math.round((estimatedCompressionRatio - 1) * 100)}% larger (no further reduction applied)`}
@@ -680,9 +680,9 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                           flex: '1 1 0',
                           padding: '0.75rem 1rem',
                           borderRadius: '8px',
-                          border: `1px solid ${splitMode === opt.key ? '#f97316' : '#E4E0D9'}`,
-                          background: splitMode === opt.key ? '#fff7ed' : '#ffffff',
-                          color: splitMode === opt.key ? '#ea580c' : '#4A4438',
+                          border: `1px solid ${splitMode === opt.key ? 'var(--accent)' : 'var(--border)'}`,
+                          background: splitMode === opt.key ? 'var(--accent-soft)' : 'var(--card-bg)',
+                          color: splitMode === opt.key ? 'var(--accent)' : 'var(--text)',
                           fontWeight: 600,
                           cursor: 'pointer',
                         }}
@@ -694,7 +694,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
                   {splitMode === 'range' && (
                     <div style={{ display: 'grid', gap: '0.75rem' }}>
-                      <p style={{ margin: 0, color: '#6B6459', fontSize: '0.9rem' }}>
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         Extract a continuous range of pages into a single PDF file.
                       </p>
                       <div className="responsive-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -721,7 +721,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                           />
                         </label>
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: '#6B6459' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         Document has {primaryPdf.pageCount} pages. 1 PDF will be created (pages {Math.min(splitRangeFrom, splitRangeTo)}–{Math.max(splitRangeFrom, splitRangeTo)}).
                       </span>
                     </div>
@@ -729,7 +729,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
                   {splitMode === 'pages' && (
                     <div style={{ display: 'grid', gap: '0.75rem' }}>
-                      <p style={{ margin: 0, color: '#6B6459', fontSize: '0.9rem' }}>
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         Split into separate PDF files, grouped by a fixed number of pages.
                       </p>
                       <label className="select-label" style={{ width: '100%' }}>
@@ -743,7 +743,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                           onChange={(e) => setSplitChunkSize(Math.max(1, Math.min(primaryPdf.pageCount, Number(e.target.value))))}
                         />
                       </label>
-                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.85rem', color: '#1e3a8a' }}>
+                      <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.85rem', color: 'var(--text)' }}>
                         Selected pages will be converted into separate PDF files. {Math.ceil(primaryPdf.pageCount / Math.max(1, splitChunkSize))} PDF{Math.ceil(primaryPdf.pageCount / Math.max(1, splitChunkSize)) === 1 ? '' : 's'} will be created.
                       </div>
                     </div>
@@ -751,7 +751,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
                   {splitMode === 'size' && (
                     <div style={{ display: 'grid', gap: '0.75rem' }}>
-                      <p style={{ margin: 0, color: '#6B6459', fontSize: '0.9rem' }}>
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         Split into files no larger than the specified size.
                       </p>
                       <label className="select-label" style={{ width: '100%' }}>
@@ -765,7 +765,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                           onChange={(e) => setSplitMaxSizeMB(Math.max(0.5, Number(e.target.value)))}
                         />
                       </label>
-                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.85rem', color: '#1e3a8a' }}>
+                      <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.85rem 1rem', fontSize: '0.85rem', color: 'var(--text)' }}>
                         This PDF will be split into files no larger than {splitMaxSizeMB} MB each.
                       </div>
                     </div>
@@ -813,7 +813,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
               {tool.id === 'pagenumber' && primaryPdf && (
                 <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
-                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     Stamps "Page X of Y" at the bottom center of every page.
                   </p>
                 </div>
@@ -836,7 +836,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
               {tool.id === 'extractImages' && primaryPdf && (
                 <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
-                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     Scans document structures to extract and package embedded images into a ZIP folder.
                   </p>
                 </div>
@@ -844,7 +844,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
 
               {tool.id === 'extractText' && primaryPdf && (
                 <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
-                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     Scrapes character metadata from pages into a plain text (.txt) download.
                   </p>
                 </div>
@@ -863,7 +863,7 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                       className="btn-primary"
                       disabled={processing}
                       onClick={runTool}
-                      style={{ width: '100%', padding: '1rem', borderRadius: '8px', fontWeight: 600, fontSize: '1.1rem', background: '#f97316', color: '#ffffff', border: 'none', cursor: processing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 6px -1px rgba(249, 115, 22, 0.3)' }}
+                      style={{ width: '100%', padding: '1rem', borderRadius: '8px', fontWeight: 600, fontSize: '1.1rem', background: 'var(--accent)', color: 'var(--card-bg)', border: 'none', cursor: processing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 6px -1px rgba(249, 115, 22, 0.3)' }}
                     >
                       {processing ? (
                         <>

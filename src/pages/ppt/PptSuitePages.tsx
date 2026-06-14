@@ -37,9 +37,9 @@ const PptSuitePages = () => {
   // --- AI Presentation States ---
   const [pptTopic, setPptTopic] = useState('')
   const [pptNumSlides, setPptNumSlides] = useState(6)
-  const [pptTemplate, setPptTemplate] = useState<'official' | 'modern' | 'minimal'>('official')
   const [aiSlides, setAiSlides] = useState<Slide[]>([])
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
 
   // Move slide up
   const moveSlideUp = (index: number) => {
@@ -75,55 +75,49 @@ const PptSuitePages = () => {
     if (!pptTopic.trim()) return
     setAiLoading(true)
     setAiSlides([])
+    setAiError('')
 
     const geminiKey = localStorage.getItem('shreedesk-gemini-key')
 
-    if (geminiKey) {
-      try {
-        const prompt = `Create a structured slide deck outline on "${pptTopic}" containing exactly ${pptNumSlides} slides. Output ONLY a JSON array matching this format: [{"title": "Slide Title", "bulletPoints": ["point 1", "point 2"], "layout": "content"}]. Do not add markdown codeblocks, only pure JSON.`
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+    if (!geminiKey) {
+      setAiError(
+        'Gemini API key required. Click the Settings ⚙️ icon in the header, paste your free Gemini API key, then try again.'
+      )
+      setAiLoading(false)
+      return
+    }
+
+    try {
+      const prompt = `Create a structured slide deck outline on "${pptTopic}" containing exactly ${pptNumSlides} slides. Output ONLY a JSON array matching this format: [{"title": "Slide Title", "bulletPoints": ["point 1", "point 2"], "layout": "content"}]. The first slide should be a title slide. Do not add markdown codeblocks, only pure JSON.`
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        })
-        const data = await response.json()
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-        
-        // Clean JSON formatting
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim()
-        const parsed = JSON.parse(cleanJson)
-        const mapped = parsed.map((s: any, idx: number) => ({
-          id: Math.random().toString(36).substring(2, 9),
-          title: s.title || `Slide ${idx + 1}`,
-          bulletPoints: s.bulletPoints || [],
-          layout: s.layout || 'content'
-        }))
-        setAiSlides(mapped)
-      } catch (err) {
-        console.error(err)
-        // fallback to default outline on JSON parse error
-        loadDefaultOutlinePresentation()
-      } finally {
-        setAiLoading(false)
-      }
-    } else {
-      setTimeout(() => {
-        loadDefaultOutlinePresentation()
-        setAiLoading(false)
-      }, 1500)
-    }
-  }
+        }
+      )
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
-  const loadDefaultOutlinePresentation = () => {
-    const defaultSlides: Slide[] = [
-      { id: 'ai-1', title: pptTopic, bulletPoints: ['Official Departmental Proposal', `Target Scope: ${pptNumSlides} schools`, `Sanction Budget: FY 2026-27`], layout: 'title' },
-      { id: 'ai-2', title: 'Problem Statement & Needs', bulletPoints: ['Power outages disrupt school teaching programs', 'Lack of light affects digital learning equipment', 'Alternative green grid required for local self-sustainment'], layout: 'content' },
-      { id: 'ai-3', title: 'Solar Energy Implementation Plan', bulletPoints: ['Install 5kW rooftop solar panels per school', 'Hybrid grid with battery backups for rainy months', 'Estimated implementation duration: 90 days'], layout: 'content' },
-      { id: 'ai-4', title: 'Detailed School-wise Phased Rollout', bulletPoints: ['Phase 1: 50 primary school pilot blocks', 'Phase 2: 120 secondary blocks', 'Continuous audit inspections via local engineers'], layout: 'content' },
-      { id: 'ai-5', title: 'Project Cost Matrix & Budgets', bulletPoints: ['Installation cost per unit: Rs. 1.2 Lakhs', 'Maintenance outlay (5 years): Rs. 20,000', 'Cleared under Central Green Schools grant'], layout: 'split' },
-      { id: 'ai-6', title: 'Expected Strategic Milestones', bulletPoints: ['Zero dependency on traditional grids', '100% solar supply in summer blocks', 'Reduction of school electricity expense log by 92%'], layout: 'content' }
-    ]
-    setAiSlides(defaultSlides.slice(0, pptNumSlides))
+      // Clean JSON formatting from response
+      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim()
+      const parsed = JSON.parse(cleanJson)
+      const mapped = parsed.map((s: any, idx: number) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        title: s.title || `Slide ${idx + 1}`,
+        bulletPoints: s.bulletPoints || [],
+        layout: s.layout || 'content'
+      }))
+      setAiSlides(mapped)
+    } catch (err) {
+      console.error('AI presentation error:', err)
+      setAiError(
+        'Failed to generate presentation. Please check your Gemini API key is valid and try again.'
+      )
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   // Export current slide deck to real PPTX presentation
@@ -429,14 +423,6 @@ const PptSuitePages = () => {
                     Slide Count
                     <input type="number" min={3} max={15} value={pptNumSlides} onChange={e => setPptNumSlides(parseInt(e.target.value) || 5)} />
                   </label>
-                  <label className="select-label" style={{ flex: 1.5 }}>
-                    Visual Template
-                    <select value={pptTemplate} onChange={e => setPptTemplate(e.target.value as any)}>
-                      <option value="official">Indian Administrative Seal</option>
-                      <option value="modern">Modern Glassmorphism</option>
-                      <option value="minimal">Clean Text Outline</option>
-                    </select>
-                  </label>
                 </div>
 
                 <button 
@@ -447,6 +433,7 @@ const PptSuitePages = () => {
                 >
                   {aiLoading ? 'Drafting outline slides...' : 'Compile Presentation Outline'}
                 </button>
+                {aiError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{aiError}</div>}
               </div>
 
               {/* Renders generated slides */}

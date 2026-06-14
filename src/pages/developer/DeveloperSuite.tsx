@@ -9,25 +9,25 @@ const DeveloperSuite = () => {
   const [copied, setCopied] = useState(false)
 
   // JSON State
-  const [jsonInput, setJsonInput] = useState('{"name":"ShreeDeskOS","version":"3.0.0","features":["PDF","Excel","Word","AI"],"local":true}')
+  const [jsonInput, setJsonInput] = useState('{"name":"TestApp","version":"1.0.0","features":["Auth","Dashboard"],"active":true}')
   const [jsonOutput, setJsonOutput] = useState('')
   const [jsonError, setJsonError] = useState('')
 
   // CSV/JSON State
-  const [csvInput, setCsvInput] = useState('SKU,Product,Quantity,Revenue\nSKU001,Premium PDF Suite,15,450.00\nSKU002,Notion-style Notes Plugin,30,900.00\nSKU003,Enterprise Word Converter,5,750.00')
+  const [csvInput, setCsvInput] = useState('ID,Name,Role,Department\n1,Alice,Engineer,Tech\n2,Bob,Designer,Design\n3,Charlie,Manager,Sales')
   const [csvJsonOutput, setCsvJsonOutput] = useState('')
 
   // XML State
-  const [xmlInput, setXmlInput] = useState('<shreedesk><app name="OS"><version>3.0.0</version></app></shreedesk>')
+  const [xmlInput, setXmlInput] = useState('<project><app name="Test"><version>1.0.0</version></app></project>')
   const [xmlOutput, setXmlOutput] = useState('')
 
   // Base64 State
-  const [b64Input, setB64Input] = useState('ShreeDesk OS 3.0.0')
+  const [b64Input, setB64Input] = useState('Hello World')
   const [b64Output, setB64Output] = useState('')
   const [b64Mode, setB64Mode] = useState<'encode' | 'decode'>('encode')
 
   // Hash State
-  const [hashInput, setHashInput] = useState('Secure Sandbox text')
+  const [hashInput, setHashInput] = useState('Sample text to hash')
   const [hashOutput, setHashOutput] = useState({ md5: '', sha1: '', sha256: '' })
 
   // API Tester State
@@ -86,7 +86,7 @@ const DeveloperSuite = () => {
 
   const jsonToCsv = () => {
     try {
-      const arr = JSON.parse(csvJsonOutput || csvInput)
+      const arr = JSON.parse(csvJsonOutput)
       if (!Array.isArray(arr) || arr.length === 0) {
         setCsvJsonOutput('Error: input must be a JSON array of objects.')
         return
