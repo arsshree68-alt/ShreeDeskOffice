@@ -425,7 +425,7 @@ const WordToolWorkspace = () => {
       {activeTab === 'to-pdf' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="file-upload">
+            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
               <input type="file" accept=".doc,.docx,.txt" onChange={(e) => e.target.files && setWordFiles(Array.from(e.target.files))} />
               Upload Word File
             </label>
@@ -441,7 +441,7 @@ const WordToolWorkspace = () => {
       {activeTab === 'pdf-to-word' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="file-upload">
+            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
               <input type="file" accept=".pdf" onChange={(e) => e.target.files?.[0] && setPdfFile(e.target.files[0])} />
               Upload PDF File
             </label>
@@ -457,7 +457,7 @@ const WordToolWorkspace = () => {
       {activeTab === 'merge' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <label className="file-upload">
+            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
               <input type="file" multiple accept=".txt,.doc,.docx" onChange={(e) => e.target.files && setMergeFiles(Array.from(e.target.files))} />
               Select Files
             </label>
@@ -474,7 +474,7 @@ const WordToolWorkspace = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }} className="responsive-2col">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <label className="file-upload">
+              <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, border: '1px solid var(--border)' }}>
                 <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleCsvUpload(e.target.files[0])} />
                 Load CSV database
               </label>

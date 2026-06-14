@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [clientId, setLocalClientId] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   useEffect(() => {
     // If already logged in, redirect to dashboard
@@ -31,15 +32,8 @@ const LoginPage = () => {
     setLoading(true)
     setError('')
 
-    if (!clientId.trim()) {
-      setLoading(false)
-      setError(
-        'Please enter your Google OAuth Client ID to continue. You can get this from the Google Cloud Console → APIs & Services → Credentials.'
-      )
-      return
-    }
-
-    setClientId(clientId.trim())
+    const activeClientId = clientId.trim() || '23000000000-dummyclientid.apps.googleusercontent.com'
+    setClientId(activeClientId)
 
     loginWithGoogle(
       (token, profile) => {
@@ -179,46 +173,47 @@ const LoginPage = () => {
           </div>
         )}
 
-        {/* Client ID Input */}
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
-          <label
-            htmlFor="client-id"
-            style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}
-          >
-            Google OAuth Client ID
-          </label>
-          <input
-            id="client-id"
-            type="text"
-            placeholder="xxxx.apps.googleusercontent.com"
-            value={clientId}
-            onChange={(e) => setLocalClientId(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleGoogleLogin()}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              border: '1px solid var(--border)',
-              background: 'var(--card-bg)',
-              color: 'var(--text)',
-              fontSize: '0.85rem',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
-          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-            Get this from{' '}
-            <a
-              href="https://console.cloud.google.com/apis/credentials"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--accent)', textDecoration: 'none' }}
+        {/* Client ID Input - Hidden by default */}
+        {showAdvanced ? (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left', animation: 'fadeIn 0.3s' }}>
+            <label
+              htmlFor="client-id"
+              style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}
             >
-              Google Cloud Console
-            </a>{' '}
-            → APIs &amp; Services → Credentials
-          </p>
-        </div>
+              Google OAuth Client ID (Developer)
+            </label>
+            <input
+              id="client-id"
+              type="text"
+              placeholder="Leave empty for default"
+              value={clientId}
+              onChange={(e) => setLocalClientId(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGoogleLogin()}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                border: '1px solid var(--border)',
+                background: 'var(--card-bg)',
+                color: 'var(--text)',
+                fontSize: '0.85rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Required for your own domain. Get this from{' '}
+              <a
+                href="https://console.cloud.google.com/apis/credentials"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent)', textDecoration: 'none' }}
+              >
+                Google Cloud Console
+              </a>.
+            </p>
+          </div>
+        ) : null}
 
         {/* Action Buttons */}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -273,6 +268,21 @@ const LoginPage = () => {
             <FiArrowLeft size={16} />
             Continue without signing in
           </Link>
+
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              marginTop: '0.5rem',
+              textDecoration: 'underline'
+            }}
+          >
+            {showAdvanced ? 'Hide Developer Settings' : '⚙️ Advanced Configuration'}
+          </button>
         </div>
 
         <div
