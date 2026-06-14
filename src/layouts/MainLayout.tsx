@@ -6,6 +6,7 @@ import CommandPalette from '../components/CommandPalette'
 import DragDropOverlay from '../components/DragDropOverlay'
 import SettingsModal from '../components/SettingsModal'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { 
   FiFileText, 
   FiFile, 
@@ -76,17 +77,22 @@ const MainLayout = () => {
     return () => window.removeEventListener('keydown', onKey)
   }, [isMobileOpen])
 
-  // Listen for global command palette keybind (Ctrl + K / Cmd + K)
+  const { toggleTheme } = useTheme()
+
+  // Listen for global command palette keybind (Ctrl + K / Cmd + K) and theme toggle (Ctrl + Shift + L)
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
         setIsPaletteOpen((prev) => !prev)
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault()
+        toggleTheme()
       }
     }
     window.addEventListener('keydown', handleGlobalKeys)
     return () => window.removeEventListener('keydown', handleGlobalKeys)
-  }, [])
+  }, [toggleTheme])
 
   const toggleSidebar = () => {
     if (window.innerWidth <= 980) {
