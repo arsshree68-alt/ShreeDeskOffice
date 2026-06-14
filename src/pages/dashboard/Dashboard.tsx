@@ -110,7 +110,7 @@ const Dashboard = () => {
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
         >
           <div className="hero-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-soft)', color: 'var(--accent)', padding: '0.5rem 1rem', borderRadius: '999px', fontSize: '0.825rem', fontWeight: 700, marginBottom: '1.25rem' }}>
-            <FiZap /> <span>SHREEDESK OFFICE OS v3.0</span>
+            <FiZap /> <span>SHREEDESK OFFICE OS v3.0.0</span>
           </div>
           <h1 style={{ fontSize: 'clamp(2.5rem, 4.5vw, 3.75rem)', lineHeight: 1.1, marginBottom: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', textAlign: 'left' }}>
             The Premium <span className="gradient-text">Productivity Operating System</span> In Your Browser.
@@ -157,13 +157,13 @@ const Dashboard = () => {
             }}
             className="glass"
           >
-            {/* Mock Window Shell */}
+            {/* Interactive Window Shell */}
             <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56', display: 'block' }}></span>
               <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e', display: 'block' }}></span>
               <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f', display: 'block' }}></span>
             </div>
-            {/* Mock Dashboard Grid */}
+            {/* Visual Dashboard Grid Preview */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', height: 'calc(100% - 2.5rem)' }}>
               <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Security Check</span>

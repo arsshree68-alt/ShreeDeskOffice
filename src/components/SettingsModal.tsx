@@ -16,11 +16,16 @@ interface ShortcutItem {
 
 const shortcutList: ShortcutItem[] = [
   { keys: ['Ctrl', 'K'], description: 'Open Universal Search & Command Palette', category: 'Global' },
-  { keys: ['Esc'], description: 'Close active modals, overlays, or palettes', category: 'Global' },
+  { keys: ['Esc'], description: 'Close active modals, Command Palette, or overlays', category: 'Global' },
   { keys: ['Ctrl', 'Shift', 'L'], description: 'Toggle between Light & Dark interface themes', category: 'Global' },
-  { keys: ['Ctrl', 'S'], description: 'Save current active document or note outline', category: 'Editor' },
+  { keys: ['Ctrl', 'S'], description: 'Save current active document, note draft, or builder data', category: 'Editor' },
+  { keys: ['Ctrl', 'B'], description: 'Toggle bold formatting in Notes Rich Text Editor', category: 'Editor' },
+  { keys: ['Ctrl', 'I'], description: 'Toggle italic formatting in Notes Rich Text Editor', category: 'Editor' },
+  { keys: ['Ctrl', 'U'], description: 'Toggle underline formatting in Notes Rich Text Editor', category: 'Editor' },
+  { keys: ['↑', '↓'], description: 'Navigate up/down through options in the Command Palette', category: 'Global' },
+  { keys: ['Enter'], description: 'Select and launch active tool in Command Palette', category: 'Global' },
   { keys: ['Ctrl', 'Enter'], description: 'Submit prompt or query in AI Chat Workspace', category: 'Integration' },
-  { keys: ['Drag & Drop'], description: 'Drop any document anywhere on screen to route it to active suite', category: 'File System' },
+  { keys: ['Drag & Drop'], description: 'Drop any document anywhere on screen to route it to the active suite', category: 'File System' },
 ]
 
 type ActiveTab = 'api' | 'auth' | 'drive' | 'shortcuts' | 'about'

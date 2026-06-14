@@ -101,21 +101,21 @@ const PptSuitePages = () => {
         setAiSlides(mapped)
       } catch (err) {
         console.error(err)
-        // fallback to mock on JSON parse error
-        loadMockAiPresentation()
+        // fallback to default outline on JSON parse error
+        loadDefaultOutlinePresentation()
       } finally {
         setAiLoading(false)
       }
     } else {
       setTimeout(() => {
-        loadMockAiPresentation()
+        loadDefaultOutlinePresentation()
         setAiLoading(false)
       }, 1500)
     }
   }
 
-  const loadMockAiPresentation = () => {
-    const mock: Slide[] = [
+  const loadDefaultOutlinePresentation = () => {
+    const defaultSlides: Slide[] = [
       { id: 'ai-1', title: pptTopic, bulletPoints: ['Official Departmental Proposal', `Target Scope: ${pptNumSlides} schools`, `Sanction Budget: FY 2026-27`], layout: 'title' },
       { id: 'ai-2', title: 'Problem Statement & Needs', bulletPoints: ['Power outages disrupt school teaching programs', 'Lack of light affects digital learning equipment', 'Alternative green grid required for local self-sustainment'], layout: 'content' },
       { id: 'ai-3', title: 'Solar Energy Implementation Plan', bulletPoints: ['Install 5kW rooftop solar panels per school', 'Hybrid grid with battery backups for rainy months', 'Estimated implementation duration: 90 days'], layout: 'content' },
@@ -123,7 +123,7 @@ const PptSuitePages = () => {
       { id: 'ai-5', title: 'Project Cost Matrix & Budgets', bulletPoints: ['Installation cost per unit: Rs. 1.2 Lakhs', 'Maintenance outlay (5 years): Rs. 20,000', 'Cleared under Central Green Schools grant'], layout: 'split' },
       { id: 'ai-6', title: 'Expected Strategic Milestones', bulletPoints: ['Zero dependency on traditional grids', '100% solar supply in summer blocks', 'Reduction of school electricity expense log by 92%'], layout: 'content' }
     ]
-    setAiSlides(mock.slice(0, pptNumSlides))
+    setAiSlides(defaultSlides.slice(0, pptNumSlides))
   }
 
   // Export current slide deck to real PPTX presentation

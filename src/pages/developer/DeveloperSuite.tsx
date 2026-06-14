@@ -9,20 +9,20 @@ const DeveloperSuite = () => {
   const [copied, setCopied] = useState(false)
 
   // JSON State
-  const [jsonInput, setJsonInput] = useState('{"name":"ShreeDeskOS","version":"3.0","features":["PDF","Excel","Word","AI"],"local":true}')
+  const [jsonInput, setJsonInput] = useState('{"name":"ShreeDeskOS","version":"3.0.0","features":["PDF","Excel","Word","AI"],"local":true}')
   const [jsonOutput, setJsonOutput] = useState('')
   const [jsonError, setJsonError] = useState('')
 
   // CSV/JSON State
-  const [csvInput, setCsvInput] = useState('id,name,role,department\n1,Abhishek,Developer,Tech\n2,Arsh,Designer,UX\n3,Raj,Director,Govt')
+  const [csvInput, setCsvInput] = useState('SKU,Product,Quantity,Revenue\nSKU001,Premium PDF Suite,15,450.00\nSKU002,Notion-style Notes Plugin,30,900.00\nSKU003,Enterprise Word Converter,5,750.00')
   const [csvJsonOutput, setCsvJsonOutput] = useState('')
 
   // XML State
-  const [xmlInput, setXmlInput] = useState('<shreedesk><app name="OS"><version>3.0</version></app></shreedesk>')
+  const [xmlInput, setXmlInput] = useState('<shreedesk><app name="OS"><version>3.0.0</version></app></shreedesk>')
   const [xmlOutput, setXmlOutput] = useState('')
 
   // Base64 State
-  const [b64Input, setB64Input] = useState('ShreeDesk OS 3.0')
+  const [b64Input, setB64Input] = useState('ShreeDesk OS 3.0.0')
   const [b64Output, setB64Output] = useState('')
   const [b64Mode, setB64Mode] = useState<'encode' | 'decode'>('encode')
 
@@ -150,6 +150,74 @@ const DeveloperSuite = () => {
   // --- Hash Generator logic ---
   const generateHashes = async () => {
     if (!hashInput) return
+
+    // Pure JS MD5 implementation
+    const calcMd5 = (str: string): string => {
+      var k = [], i = 0;
+      for (; i < 64; i++) {
+        k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+      }
+      var h = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476];
+      var s = [
+        7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
+        5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
+        4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
+        6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21
+      ];
+      var words: number[] = [];
+      var n = str.length;
+      for (i = 0; i < n; i++) {
+        words[i >> 2] |= (str.charCodeAt(i) & 0xff) << ((i % 4) * 8);
+      }
+      words[n >> 2] |= 0x80 << ((n % 4) * 8);
+      words[(((n + 8) >> 6) << 4) + 14] = n * 8;
+      
+      var rotateLeft = (l: number, r: number) => (l << r) | (l >>> (32 - r));
+      var add = (x: number, y: number) => {
+        var lsw = (x & 0xFFFF) + (y & 0xFFFF);
+        var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+        return (msw << 16) | (lsw & 0xFFFF);
+      };
+      
+      for (var j = 0; j < words.length; j += 16) {
+        var a = h[0], b = h[1], c = h[2], d = h[3];
+        for (i = 0; i < 64; i++) {
+          var f, g;
+          if (i < 16) {
+            f = (b & c) | (~b & d);
+            g = i;
+          } else if (i < 32) {
+            f = (d & b) | (~d & c);
+            g = (5 * i + 1) % 16;
+          } else if (i < 48) {
+            f = b ^ c ^ d;
+            g = (3 * i + 5) % 16;
+          } else {
+            f = c ^ (b | ~d);
+            g = (7 * i) % 16;
+          }
+          var temp = d;
+          d = c;
+          c = b;
+          b = add(b, rotateLeft(add(a, add(f, add(k[i], words[j + g] || 0))), s[i]));
+          a = temp;
+        }
+        h[0] = add(h[0], a);
+        h[1] = add(h[1], b);
+        h[2] = add(h[2], c);
+        h[3] = add(h[3], d);
+      }
+      
+      var result = '';
+      for (i = 0; i < 4; i++) {
+        for (var bIdx = 0; bIdx < 4; bIdx++) {
+          var hex = ((h[i] >> (bIdx * 8)) & 0xFF).toString(16);
+          result += hex.length === 1 ? '0' + hex : hex;
+        }
+      }
+      return result;
+    }
+
     try {
       const encoder = new TextEncoder()
       const data = encoder.encode(hashInput)
@@ -164,9 +232,8 @@ const DeveloperSuite = () => {
       const hashArray1 = Array.from(new Uint8Array(hashBuffer1))
       const sha1 = hashArray1.map(b => b.toString(16).padStart(2, '0')).join('')
 
-      // MD5 (Mock/Subtle crypto does not support MD5. We use a lightweight JS fallback or label SHA hashes)
-      // Since Subtle crypto doesn't support MD5, we generate a mock hash representing signature
-      let md5 = sha256.substring(0, 32) // Client-side representation
+      // MD5 (Real client-side calculation)
+      const md5 = calcMd5(hashInput)
 
       setHashOutput({ md5, sha1, sha256 })
     } catch (e) {

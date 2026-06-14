@@ -7,7 +7,7 @@ const Footer = () => (
       <div className="footer-brand">
         <h3>ShreeDeskOffice</h3>
         <p className="footer-tagline">Premium productivity, designed for everyone.</p>
-        <span className="footer-version">v1.2.0</span>
+        <span className="footer-version">v3.0.0</span>
       </div>
       
       <div className="footer-links">

@@ -780,6 +780,40 @@ const NotesPage = () => {
                         placeholder="Start typing note content in Markdown format..."
                         value={content}
                         onChange={(e) => handleEditorChange('content', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.ctrlKey || e.metaKey) {
+                            if (e.key === 'b' || e.key === 'B') {
+                              e.preventDefault()
+                              insertFormat('**', '**')
+                            } else if (e.key === 'i' || e.key === 'I') {
+                              e.preventDefault()
+                              insertFormat('*', '*')
+                            } else if (e.key === 'u' || e.key === 'U') {
+                              e.preventDefault()
+                              insertFormat('<u>', '</u>')
+                            } else if (e.key === 's' || e.key === 'S') {
+                              e.preventDefault()
+                              if (autoSaveTimerRef.current) {
+                                clearTimeout(autoSaveTimerRef.current)
+                              }
+                              const updated = notes.map(n => {
+                                if (n.id === activeNoteId) {
+                                  return {
+                                    ...n,
+                                    title,
+                                    content,
+                                    folder: noteFolder,
+                                    tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
+                                    updatedAt: new Date().toISOString()
+                                  }
+                                }
+                                return n
+                              })
+                              saveNotesToLocal(updated)
+                              handleSyncToDrive()
+                            }
+                          }
+                        }}
                         style={{
                           minHeight: '350px',
                           border: 'none',
