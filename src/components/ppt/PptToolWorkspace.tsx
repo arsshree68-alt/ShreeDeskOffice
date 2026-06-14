@@ -45,7 +45,7 @@ const PptToolWorkspace = () => {
           const resp = await fetch(url, { method: 'POST', body: form })
           if (!resp.ok) throw new Error(`Converter returned ${resp.status}`)
           const blob = await resp.blob()
-          outputs.push({ fileName: file.name.replace(/\.[^/.]+$/, '') + '.pdf', blob })
+          outputs.push({ fileName: 'ShreeDesk_' + file.name.replace(/\.[^/.]+$/, '') + '.pdf', blob })
         } else {
           throw new Error('PPT→PDF conversion requires a server-side converter. Configure __SHREEDESK_PPT_CONVERTER_URL to enable.')
         }
