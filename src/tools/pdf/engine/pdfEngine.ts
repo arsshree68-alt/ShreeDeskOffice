@@ -491,10 +491,11 @@ export const convertWordToPdf = async (
   onProgress?.({ label: `Loading ${file.name}`, value: 10 })
   const name = file.name.toLowerCase()
   const buffer = await readAsArrayBuffer(file)
-  // Basic support: convert plain text and simple RTF to a single-page PDF
+
+  // Plain text / RTF
   if (file.type === 'text/plain' || name.endsWith('.txt') || name.endsWith('.rtf')) {
     const pdfDoc = await PDFDocument.create()
-    let page = pdfDoc.addPage([595, 842]) // A4-ish
+    let page = pdfDoc.addPage([595, 842])
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const text = new TextDecoder().decode(new Uint8Array(buffer))
     const lines = text.split(/\r?\n/)
@@ -506,17 +507,103 @@ export const convertWordToPdf = async (
         y = page.getHeight() - margin
         page = pdfDoc.addPage([595, 842])
       }
-      page.drawText(line, { x: margin, y: y - fontSize, size: fontSize, font })
+      page.drawText(line.substring(0, 120), { x: margin, y: y - fontSize, size: fontSize, font })
       y -= fontSize + 4
     }
-
     onProgress?.({ label: 'Generating PDF', value: 70 })
     const bytes = await pdfDoc.save({ useObjectStreams: true })
     return { blob: blobFromBytes(bytes, pdfMimeType), fileName: 'ShreeDesk_Word_To_PDF.pdf' }
   }
 
-  // For DOC/DOCX we currently cannot guarantee fidelity in-browser
-  throw new Error('DOC/DOCX conversion requires a server-side converter. Please upload to a server endpoint or use TXT/RTF for client-side conversion.')
+  // DOCX — parse internal XML using JSZip
+  if (name.endsWith('.docx') || name.endsWith('.doc')) {
+    onProgress?.({ label: 'Parsing DOCX document structure...', value: 25 })
+    try {
+      const zip = await JSZip.loadAsync(buffer)
+      const docXmlText = await zip.file('word/document.xml')?.async('text')
+      if (!docXmlText) throw new Error('Could not read document.xml from DOCX file.')
+
+      const parser = new DOMParser()
+      const xmlDoc = parser.parseFromString(docXmlText, 'application/xml')
+      const paragraphElements = xmlDoc.getElementsByTagName('w:p')
+
+      const pdfDoc = await PDFDocument.create()
+      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+      const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
+
+      let page = pdfDoc.addPage([595.276, 841.890])
+      const { width, height } = page.getSize()
+      const marginPx = 50
+      const lineSpacing = 17
+      let y = height - marginPx
+      const maxWidth = width - marginPx * 2
+
+      onProgress?.({ label: 'Rendering paragraphs to PDF...', value: 50 })
+
+      for (let pi = 0; pi < paragraphElements.length; pi++) {
+        const para = paragraphElements[pi]
+
+        // Collect all text runs
+        const runs = para.getElementsByTagName('w:r')
+        if (runs.length === 0) {
+          y -= lineSpacing * 0.5
+          if (y < marginPx) { page = pdfDoc.addPage([595.276, 841.890]); y = height - marginPx }
+          continue
+        }
+
+        let lineBuffer = ''
+        let isBold = false
+        let isItalic = false
+        const paraFontSize = 11
+
+        for (let ri = 0; ri < runs.length; ri++) {
+          const run = runs[ri]
+          if (run.getElementsByTagName('w:b').length > 0) isBold = true
+          if (run.getElementsByTagName('w:i').length > 0) isItalic = true
+          const tNodes = run.getElementsByTagName('w:t')
+          for (let ti = 0; ti < tNodes.length; ti++) {
+            lineBuffer += tNodes[ti].textContent ?? ''
+          }
+        }
+
+        if (!lineBuffer.trim()) continue
+
+        const chosenFont = isBold ? fontBold : isItalic ? fontItalic : fontRegular
+
+        // Word wrap
+        const words = lineBuffer.split(/\s+/)
+        let currentLine = ''
+        for (const word of words) {
+          const candidate = currentLine ? `${currentLine} ${word}` : word
+          const candidateW = chosenFont.widthOfTextAtSize(candidate, paraFontSize)
+          if (candidateW > maxWidth && currentLine) {
+            if (y < marginPx + paraFontSize) { page = pdfDoc.addPage([595.276, 841.890]); y = height - marginPx }
+            page.drawText(currentLine, { x: marginPx, y, size: paraFontSize, font: chosenFont, color: rgb(0.1, 0.1, 0.1) })
+            y -= lineSpacing
+            currentLine = word
+          } else {
+            currentLine = candidate
+          }
+        }
+        if (currentLine) {
+          if (y < marginPx + paraFontSize) { page = pdfDoc.addPage([595.276, 841.890]); y = height - marginPx }
+          page.drawText(currentLine, { x: marginPx, y, size: paraFontSize, font: chosenFont, color: rgb(0.1, 0.1, 0.1) })
+          y -= lineSpacing * 1.3
+        }
+      }
+
+      onProgress?.({ label: 'Saving PDF output...', value: 90 })
+      const pdfBytes = await pdfDoc.save({ useObjectStreams: true })
+      const outputName = `ShreeDesk_${file.name.replace(/\.[a-z0-9]+$/i, '.pdf')}`
+      return { blob: blobFromBytes(pdfBytes, pdfMimeType), fileName: outputName }
+    } catch (err) {
+      console.error('DOCX parsing failed:', err)
+      throw new Error('Failed to parse DOCX file. The document may be corrupted or use unsupported features.')
+    }
+  }
+
+  throw new Error('Unsupported format. Please upload a .txt, .rtf, or .docx file for client-side conversion.')
 }
 
 export const watermarkPdfFile = async (

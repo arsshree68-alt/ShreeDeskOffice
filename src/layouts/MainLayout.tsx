@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, Link, useLocation, Navigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import CommandPalette from '../components/CommandPalette'
 import DragDropOverlay from '../components/DragDropOverlay'
 import SettingsModal from '../components/SettingsModal'
-import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
   FiFileText, 
@@ -21,8 +20,8 @@ import {
 } from 'react-icons/fi'
 
 const navItems = [
-  { label: 'Home / Dashboard', path: '/', icon: <FiActivity /> },
-  { label: 'Notes Workspace', path: '/notes', icon: <FiEdit3 /> },
+  { label: 'Dashboard', path: '/', icon: <FiActivity /> },
+  { label: 'Notes', path: '/notes', icon: <FiEdit3 /> },
   { label: 'PDF Suite', path: '/pdf', icon: <FiFile /> },
   { label: 'Excel Suite', path: '/excel', icon: <FiBarChart2 /> },
   { label: 'Word Suite', path: '/word', icon: <FiFileText /> },
@@ -34,35 +33,15 @@ const navItems = [
 ]
 
 const MainLayout = () => {
-  const { user, loading } = useAuth()
+  // ── All hooks MUST be declared before any conditional returns ──
+  const { toggleTheme } = useTheme()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const location = useLocation()
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid var(--accent-soft)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-          <span style={{ fontWeight: 600 }}>Loading ShreeDeskOS Workspace...</span>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    )
-  }
-
-  if (!user && location.pathname !== '/login') {
-    return <Navigate to="/login" replace />
-  }
-
-  // Close mobile sidebar on navigation
+  // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileOpen(false)
   }, [location.pathname])
@@ -77,9 +56,7 @@ const MainLayout = () => {
     return () => window.removeEventListener('keydown', onKey)
   }, [isMobileOpen])
 
-  const { toggleTheme } = useTheme()
-
-  // Listen for global command palette keybind (Ctrl + K / Cmd + K) and theme toggle (Ctrl + Shift + L)
+  // Global keyboard shortcuts: Ctrl+K (command palette) and Ctrl+Shift+L (theme toggle)
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {

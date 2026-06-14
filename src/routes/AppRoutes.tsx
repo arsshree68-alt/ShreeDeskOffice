@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 
 /* ── Suite pages (launchers & workspaces) ────────────────────────── */
@@ -45,6 +45,10 @@ const S = (C: React.ComponentType, label?: string) => (
 
 const AppRoutes = () => (
   <Routes>
+    {/* Login page is standalone — no sidebar/header layout */}
+    <Route path="/login" element={<Suspense fallback={<Loading label="Loading Login screen…" />}><LoginPage /></Suspense>} />
+
+    {/* All main workspace routes use MainLayout (no forced auth guard) */}
     <Route path="/" element={<MainLayout />}>
       {/* Dashboard */}
       <Route index element={S(DashboardPage)} />
@@ -81,15 +85,11 @@ const AppRoutes = () => (
       <Route path="developer" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
       <Route path="developer/*" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
 
-
       {/* Notes Suite */}
       <Route path="notes" element={S(NotesPage, 'Loading Notes Workspace…')} />
 
-      {/* Login Page */}
-      <Route path="login" element={S(LoginPage, 'Loading Login screen…')} />
-
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Fallback — redirect to dashboard */}
+      <Route path="*" element={S(DashboardPage)} />
     </Route>
   </Routes>
 )
