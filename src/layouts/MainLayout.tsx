@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation, Navigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import CommandPalette from '../components/CommandPalette'
 import DragDropOverlay from '../components/DragDropOverlay'
 import SettingsModal from '../components/SettingsModal'
+import { useAuth } from '../context/AuthContext'
 import { 
   FiFileText, 
   FiFile, 
@@ -15,8 +16,7 @@ import {
   FiActivity, 
   FiSliders, 
   FiCpu,
-  FiEdit3,
-  FiCommand
+  FiEdit3
 } from 'react-icons/fi'
 
 const navItems = [
@@ -30,15 +30,36 @@ const navItems = [
   { label: 'AI Suite', path: '/ai', icon: <FiCpu /> },
   { label: 'Government Suite', path: '/govt', icon: <FiShield /> },
   { label: 'Developer Suite', path: '/developer', icon: <FiSliders /> },
-  { label: 'Shortcuts Manual', path: '/shortcuts', icon: <FiCommand /> },
 ]
 
 const MainLayout = () => {
+  const { user, loading } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const location = useLocation()
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '40px', height: '40px', border: '3px solid var(--accent-soft)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+          <span style={{ fontWeight: 600 }}>Loading ShreeDeskOS Workspace...</span>
+        </div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  if (!user && location.pathname !== '/login') {
+    return <Navigate to="/login" replace />
+  }
 
   // Close mobile sidebar on navigation
   useEffect(() => {

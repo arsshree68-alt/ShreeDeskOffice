@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { FiCloud, FiInfo } from 'react-icons/fi'
 import { loginWithGoogle, getGoogleToken, getClientId, setClientId } from '../../utils/googleDrive'
+import { useAuth } from '../../context/AuthContext'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const { login, continueOffline } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [clientId, setLocalClientId] = useState('')
@@ -44,8 +46,9 @@ const LoginPage = () => {
     }
     
     loginWithGoogle(
-      (_token, _profile) => {
+      (token, profile) => {
         setLoading(false)
+        login(token, profile)
         navigate('/')
       },
       (err) => {
@@ -206,7 +209,10 @@ const LoginPage = () => {
           </button>
 
           <button 
-            onClick={() => navigate('/')} 
+            onClick={() => {
+              continueOffline()
+              navigate('/')
+            }} 
             className="btn-secondary" 
             style={{ 
               width: '100%', 

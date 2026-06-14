@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { 
   FiZap, FiFile, FiShield, FiStar, FiActivity, 
   FiClock, FiCpu, FiLayers, FiSliders, 
@@ -47,6 +48,29 @@ const Dashboard = () => {
       saved: formatFileSize(storageSaved),
       exports: exportsCreated
     }
+  }, [recentFiles])
+
+  // Get activity stats grouped by date for past 7 days
+  const chartData = useMemo(() => {
+    const data: Record<string, number> = {}
+    const today = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(today.getDate() - i)
+      const label = d.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })
+      data[label] = 0
+    }
+    recentFiles.forEach(file => {
+      const fileDate = new Date(file.timestamp)
+      const label = fileDate.toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' })
+      if (label in data) {
+        data[label]++
+      }
+    })
+    return Object.entries(data).map(([date, count]) => ({
+      date,
+      count
+    }))
   }, [recentFiles])
 
   // Get matching tools based on categories
@@ -155,18 +179,23 @@ const Dashboard = () => {
                 <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent)' }}>{stats.processed}</span>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Local Cache Active</span>
               </div>
-              <div style={{ gridColumn: 'span 2', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Statistical Indexing</span>
+              <div style={{ gridColumn: 'span 2', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', height: '140px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Daily Activity Log</span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--accent)' }}>Live Analytics</span>
                 </div>
-                {/* Mock Chart representation */}
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px', padding: '0.25rem 0', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ flex: 1, height: '30%', background: 'var(--accent-soft)', borderRadius: '2px' }}></div>
-                  <div style={{ flex: 1, height: '70%', background: 'var(--accent-soft)', borderRadius: '2px' }}></div>
-                  <div style={{ flex: 1, height: '45%', background: 'var(--accent-soft)', borderRadius: '2px' }}></div>
-                  <div style={{ flex: 1, height: '90%', background: 'var(--accent)', borderRadius: '2px' }}></div>
-                  <div style={{ flex: 1, height: '60%', background: 'var(--accent-soft)', borderRadius: '2px' }}></div>
+                <div style={{ width: '100%', height: '95px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={8} tickLine={false} />
+                      <YAxis stroke="var(--text-muted)" fontSize={8} tickLine={false} allowDecimals={false} width={15} />
+                      <Tooltip 
+                        contentStyle={{ background: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderRadius: '4px', fontSize: '0.75rem' }} 
+                        cursor={{ fill: 'var(--accent-soft)' }} 
+                      />
+                      <Bar dataKey="count" fill="var(--accent)" radius={[2, 2, 0, 0]} barSize={14} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>

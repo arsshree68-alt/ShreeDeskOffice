@@ -14,7 +14,6 @@ const AiWorkspace     = lazy(() => import('../pages/ai/AiWorkspace'))
 const GovSuitePages   = lazy(() => import('../pages/govt/GovSuitePages'))
 const DeveloperSuite  = lazy(() => import('../pages/developer/DeveloperSuite'))
 const PptSuitePages   = lazy(() => import('../pages/ppt/PptSuitePages'))
-const ShortcutsPage   = lazy(() => import('../pages/developer/ShortcutsPage'))
 const NotesPage       = lazy(() => import('../pages/notes/NotesPage'))
 const LoginPage       = lazy(() => import('../pages/auth/LoginPage'))
 
@@ -82,8 +81,6 @@ const AppRoutes = () => (
       <Route path="developer" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
       <Route path="developer/*" element={S(DeveloperSuite, 'Loading Developer Suite…')} />
 
-      {/* Shortcuts Guide */}
-      <Route path="shortcuts" element={S(ShortcutsPage, 'Loading Shortcuts Manual…')} />
 
       {/* Notes Suite */}
       <Route path="notes" element={S(NotesPage, 'Loading Notes Workspace…')} />

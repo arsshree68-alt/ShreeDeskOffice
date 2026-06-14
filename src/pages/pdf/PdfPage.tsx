@@ -22,6 +22,12 @@ const PDF_TOOLS: PdfToolEntry[] = [
   { id: 'imageToPdf',  title: 'Image to PDF', description: 'Convert JPG and PNG files into a multi-page PDF.', icon: '🖼️', route: '/pdf/image-to-pdf' },
   { id: 'pdfToImage',  title: 'PDF to Image', description: 'Render every PDF page as high-quality PNG images.', icon: '🌄', route: '/pdf/pdf-to-image' },
   { id: 'wordToPdf',   title: 'Word to PDF',  description: 'Convert DOC/DOCX/TXT documents to PDF.', icon: '📃', route: '/pdf/word-to-pdf' },
+  { id: 'watermark',   title: 'Add Watermark', description: 'Draw text watermark overlays on all pages.', icon: '🏷️', route: '/pdf/watermark' },
+  { id: 'pagenumber',  title: 'Add Page Numbers', description: 'Stamp sequential page numbering at the bottom of pages.', icon: '🔢', route: '/pdf/pagenumber' },
+  { id: 'protect',     title: 'Protect PDF',  description: 'Encrypt a PDF file with a password to restrict viewing.', icon: '🔒', route: '/pdf/protect' },
+  { id: 'unlock',      title: 'Unlock PDF',   description: 'Decrypt password security from a protected PDF.', icon: '🔓', route: '/pdf/unlock' },
+  { id: 'extract-images', title: 'Extract Images', description: 'Pull all embedded image assets into a ZIP.', icon: '🖼️', route: '/pdf/extract-images' },
+  { id: 'extract-text',   title: 'Extract Text',   description: 'Scrape readable text characters from all pages.', icon: '📝', route: '/pdf/extract-text' },
 ]
 
 const PdfPage = () => {

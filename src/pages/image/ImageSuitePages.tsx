@@ -5,10 +5,11 @@ import { FiImage, FiDownload } from 'react-icons/fi'
 import { useRecentFiles } from '../../hooks/useRecentFiles'
 import { formatFileSize } from '../../tools/pdf/engine/fileUtils'
 
-type ImageTab = 'compress' | 'resize' | 'passport' | 'signature' | 'scanner'
+type ImageTab = 'compress' | 'resize' | 'crop' | 'passport' | 'signature' | 'scanner'
 
 const getTabFromPath = (path: string): ImageTab => {
   if (path.includes('/image/resize')) return 'resize'
+  if (path.includes('/image/crop')) return 'crop'
   if (path.includes('/image/passport')) return 'passport'
   if (path.includes('/image/signature') || path.includes('/image/extract-signature')) return 'signature'
   if (path.includes('/image/scanner')) return 'scanner'
@@ -40,13 +41,20 @@ const ImageSuitePages = () => {
   const [resizeWidth, setResizeWidth] = useState(800)
   const [resizeHeight, setResizeHeight] = useState(600)
 
-  // 3. Passport options
+  // 3. Crop options
+  const [cropX, setCropX] = useState(0)
+  const [cropY, setCropY] = useState(0)
+  const [cropWidth, setCropWidth] = useState(300)
+  const [cropHeight, setCropHeight] = useState(300)
+  const [imgMaxDimensions, setImgMaxDimensions] = useState({ width: 800, height: 600 })
+
+  // 4. Passport options
   const [passportBg, setPassportBg] = useState<'white' | 'blue' | 'navy'>('white')
 
-  // 4. Signature options
+  // 5. Signature options
   const [sigThreshold, setSigThreshold] = useState(150)
 
-  // 5. Scanner options
+  // 6. Scanner options
   const [scanFilter, setScanFilter] = useState<'grayscale' | 'binarized' | 'high-contrast'>('high-contrast')
   const [scanThreshold, setScanThreshold] = useState(128)
 
@@ -65,6 +73,11 @@ const ImageSuitePages = () => {
       img.onload = () => {
         setResizeWidth(img.width)
         setResizeHeight(img.height)
+        setImgMaxDimensions({ width: img.width, height: img.height })
+        setCropWidth(Math.round(img.width * 0.5))
+        setCropHeight(Math.round(img.height * 0.5))
+        setCropX(Math.round(img.width * 0.25))
+        setCropY(Math.round(img.height * 0.25))
       }
       img.src = reader.result as string
     }
@@ -120,19 +133,41 @@ const ImageSuitePages = () => {
     img.src = imagePreview
   }
 
-  // --- 3. Passport Photo Maker ---
+  // --- 3. Crop Logic ---
+  const runCrop = () => {
+    if (!imagePreview) return
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = cropWidth
+      canvas.height = cropHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      // Draw the cropped portion
+      ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      setProcessedPreview(dataUrl)
+      const approxSize = Math.round((dataUrl.length - 22) * 3 / 4)
+      setProcessedSize(approxSize)
+
+      const regName = selectedFile?.name ? 'ShreeDesk_cropped_' + selectedFile.name : 'ShreeDesk_cropped_image.jpg'
+      addRecentFile(regName, 'Generated', originalSize, 0, '/image')
+    }
+    img.src = imagePreview
+  }
+
+  // --- 4. Passport Photo Maker ---
   const runPassportMaker = () => {
     if (!imagePreview) return
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
-      // Passport standard ratio (35mm x 45mm => 350px x 450px)
       canvas.width = 350
       canvas.height = 450
       const ctx = canvas.getContext('2d')
       if (!ctx) return
 
-      // Fill selected background color
       const bgColors = {
         white: '#ffffff',
         blue: '#00bfff',
@@ -141,12 +176,11 @@ const ImageSuitePages = () => {
       ctx.fillStyle = bgColors[passportBg]
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Draw face with slight offset (simulating cropping)
       const scale = Math.min(canvas.width / img.width, canvas.height / img.height) * 1.2
       const w = img.width * scale
       const h = img.height * scale
       const x = (canvas.width - w) / 2
-      const y = (canvas.height - h) / 3 // keep head in upper third
+      const y = (canvas.height - h) / 3
 
       ctx.drawImage(img, x, y, w, h)
       
@@ -159,7 +193,7 @@ const ImageSuitePages = () => {
     img.src = imagePreview
   }
 
-  // --- 4. Signature Extractor ---
+  // --- 5. Signature Extractor ---
   const runSignatureExtraction = () => {
     if (!imagePreview) return
     const img = new Image()
@@ -174,20 +208,16 @@ const ImageSuitePages = () => {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const data = imgData.data
 
-      // Erase white background pixels using thresholding
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i]
         const g = data[i + 1]
         const b = data[i + 2]
         
-        // Luminance calculation
         const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
         
         if (luminance > sigThreshold) {
-          // Make pixel fully transparent
           data[i + 3] = 0
         } else {
-          // Enhance dark contrast (darken pen strokes)
           data[i] = Math.max(0, r - 50)
           data[i + 1] = Math.max(0, g - 50)
           data[i + 2] = Math.max(0, b - 50)
@@ -195,7 +225,7 @@ const ImageSuitePages = () => {
       }
 
       ctx.putImageData(imgData, 0, 0)
-      const dataUrl = canvas.toDataURL('image/png') // MUST be PNG for transparency
+      const dataUrl = canvas.toDataURL('image/png')
       setProcessedPreview(dataUrl)
       setProcessedSize(Math.round((dataUrl.length - 22) * 3 / 4))
 
@@ -204,7 +234,7 @@ const ImageSuitePages = () => {
     img.src = imagePreview
   }
 
-  // --- 5. Document Scanner (Binarization & High Contrast) ---
+  // --- 6. Document Scanner ---
   const runScanner = () => {
     if (!imagePreview) return
     const img = new Image()
@@ -227,18 +257,16 @@ const ImageSuitePages = () => {
         const luminance = 0.299 * r + 0.587 * g + 0.114 * b
 
         if (scanFilter === 'grayscale') {
-          data[i] = luminance
-          data[i + 1] = luminance
-          data[i + 2] = luminance
+          data[i] = Math.min(255, Math.max(0, luminance))
+          data[i + 1] = Math.min(255, Math.max(0, luminance))
+          data[i + 2] = Math.min(255, Math.max(0, luminance))
         } else if (scanFilter === 'binarized') {
-          // Pure Black or White (binarization)
           const val = luminance > scanThreshold ? 255 : 0
           data[i] = val
           data[i + 1] = val
           data[i + 2] = val
         } else if (scanFilter === 'high-contrast') {
-          // Stretch contrast to clear shadows
-          const contrast = 1.8 // factor
+          const contrast = 1.8
           const factor = (259 * (contrast + 255)) / (255 * (259 - contrast))
           const val = factor * (luminance - 128) + 128
           const cleanVal = Math.min(255, Math.max(0, val))
@@ -269,7 +297,7 @@ const ImageSuitePages = () => {
   return (
     <ToolPageShell
       title="Image Suite"
-      description="Compress, convert formats, extract signatures, generate passport photos, and binarize scanned documents."
+      description="Compress, crop, resize, convert formats, extract signatures, generate passport photos, and binarize scanned documents."
       suiteLabel="Workspace OS"
       suiteRoute="/"
       icon="🖼️"
@@ -282,6 +310,7 @@ const ImageSuitePages = () => {
           {[
             { id: 'compress', label: 'Compress & Convert', icon: '🗜️' },
             { id: 'resize', label: 'Resize & Dimensions', icon: '📐' },
+            { id: 'crop', label: 'Crop Image', icon: '✂️' },
             { id: 'passport', label: 'Passport Photo', icon: '🆔' },
             { id: 'signature', label: 'Extract Signature', icon: '✒️' },
             { id: 'scanner', label: 'Document Scanner', icon: '🔍' }
@@ -405,7 +434,60 @@ const ImageSuitePages = () => {
                   </div>
                 )}
 
-                {/* 3. Passport Photo controls */}
+                {/* 3. Crop tab controls */}
+                {activeTab === 'crop' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        Offset X ({cropX}px)
+                        <input 
+                          type="range" 
+                          min={0} 
+                          max={Math.max(0, imgMaxDimensions.width - cropWidth)} 
+                          value={cropX} 
+                          onChange={e => setCropX(Math.min(imgMaxDimensions.width - cropWidth, parseInt(e.target.value) || 0))} 
+                        />
+                      </label>
+                      <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        Offset Y ({cropY}px)
+                        <input 
+                          type="range" 
+                          min={0} 
+                          max={Math.max(0, imgMaxDimensions.height - cropHeight)} 
+                          value={cropY} 
+                          onChange={e => setCropY(Math.min(imgMaxDimensions.height - cropHeight, parseInt(e.target.value) || 0))} 
+                        />
+                      </label>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        Crop Width ({cropWidth}px)
+                        <input 
+                          type="range" 
+                          min={10} 
+                          max={imgMaxDimensions.width - cropX} 
+                          value={cropWidth} 
+                          onChange={e => setCropWidth(Math.min(imgMaxDimensions.width - cropX, Math.max(10, parseInt(e.target.value) || 10)))} 
+                        />
+                      </label>
+                      <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        Crop Height ({cropHeight}px)
+                        <input 
+                          type="range" 
+                          min={10} 
+                          max={imgMaxDimensions.height - cropY} 
+                          value={cropHeight} 
+                          onChange={e => setCropHeight(Math.min(imgMaxDimensions.height - cropY, Math.max(10, parseInt(e.target.value) || 10)))} 
+                        />
+                      </label>
+                    </div>
+
+                    <button className="btn-primary" onClick={runCrop}>Apply Crop</button>
+                  </div>
+                )}
+
+                {/* 4. Passport Photo controls */}
                 {activeTab === 'passport' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <label className="select-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -426,7 +508,7 @@ const ImageSuitePages = () => {
                   </div>
                 )}
 
-                {/* 4. Signature controls */}
+                {/* 5. Signature controls */}
                 {activeTab === 'signature' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <label className="input-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -449,7 +531,7 @@ const ImageSuitePages = () => {
                   </div>
                 )}
 
-                {/* 5. Scanner controls */}
+                {/* 6. Scanner controls */}
                 {activeTab === 'scanner' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <label className="select-label" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -488,9 +570,37 @@ const ImageSuitePages = () => {
                 
                 {activeTab === 'passport' && !processedPreview ? (
                   /* Oval crop template guide */
-                  <div className="passport-photo-canvas-wrapper">
-                    <img src={imagePreview} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                    <div className="passport-overlay-guide"></div>
+                  <div className="passport-photo-canvas-wrapper" style={{ position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', maxHeight: '340px' }}>
+                    <img src={imagePreview} style={{ maxWidth: '100%', maxHeight: '320px', objectFit: 'contain' }} />
+                    <div className="passport-overlay-guide" style={{ position: 'absolute', border: '2px dashed #3b82f6', borderRadius: '50%', width: '150px', height: '200px', background: 'rgba(59, 130, 246, 0.1)', pointerEvents: 'none' }}></div>
+                  </div>
+                ) : activeTab === 'crop' && !processedPreview ? (
+                  /* Live crop mask overlay */
+                  <div style={{ position: 'relative', border: '1px solid var(--border)', borderRadius: '0.75rem', background: 'var(--panel-bg)', padding: '0.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', maxHeight: '340px', width: '100%', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <img src={imagePreview} style={{ maxWidth: '100%', maxHeight: '320px', objectFit: 'contain' }} id="crop-source-img" />
+                      {(() => {
+                        const leftPct = (cropX / imgMaxDimensions.width) * 100
+                        const topPct = (cropY / imgMaxDimensions.height) * 100
+                        const widthPct = (cropWidth / imgMaxDimensions.width) * 100
+                        const heightPct = (cropHeight / imgMaxDimensions.height) * 100
+
+                        return (
+                          <div 
+                            style={{
+                              position: 'absolute',
+                              left: `${leftPct}%`,
+                              top: `${topPct}%`,
+                              width: `${widthPct}%`,
+                              height: `${heightPct}%`,
+                              border: '2px dashed #f97316',
+                              background: 'rgba(249, 115, 22, 0.15)',
+                              pointerEvents: 'none'
+                            }}
+                          />
+                        )
+                      })()}
+                    </div>
                   </div>
                 ) : (
                   <div 

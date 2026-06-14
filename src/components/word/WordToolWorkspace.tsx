@@ -100,7 +100,7 @@ const WordToolWorkspace = () => {
       // Sync to Google Drive
       const token = getGoogleToken()
       if (token) {
-        await uploadFileToDrive('PDF', outputName, blob)
+        await uploadFileToDrive('Converted Files', outputName, blob)
       }
 
       setFeedback(`Successfully converted Word document to PDF: ${outputName}`)
@@ -148,7 +148,7 @@ const WordToolWorkspace = () => {
           // Sync to Google Drive
           const token = getGoogleToken()
           if (token) {
-            await uploadFileToDrive('Word', outputName, docBlob)
+            await uploadFileToDrive('Converted Files', outputName, docBlob)
           }
 
           setFeedback(`Extracted text from PDF and downloaded Word outline: ${outputName}`)
@@ -253,7 +253,7 @@ const WordToolWorkspace = () => {
       // Sync to Google Drive
       const token = getGoogleToken()
       if (token) {
-        await uploadFileToDrive('Word', outputName, blob)
+        await uploadFileToDrive('Merged Files', outputName, blob)
       }
 
       setFeedback(`Documents merged successfully into: ${outputName}`)
@@ -328,7 +328,7 @@ const WordToolWorkspace = () => {
       // Sync to Google Drive
       const token = getGoogleToken()
       if (token) {
-        await uploadFileToDrive('Word', outputName, blob)
+        await uploadFileToDrive('Word Documents', outputName, blob)
       }
 
       setFeedback(`Generated ZIP archive with ${csvRows.length} filled templates.`)

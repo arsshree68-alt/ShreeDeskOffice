@@ -187,7 +187,7 @@ const PptSuitePages = () => {
     if (token) {
       pres.write({ outputType: 'blob' })
         .then(async (blob: any) => {
-          await uploadFileToDrive('PPT', outputName, blob as Blob)
+          await uploadFileToDrive('PowerPoints', outputName, blob as Blob)
         })
         .catch(err => console.error('Error syncing presentation to Drive', err))
     }

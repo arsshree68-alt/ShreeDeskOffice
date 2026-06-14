@@ -47,6 +47,8 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
   const [splitMaxSizeMB, setSplitMaxSizeMB] = useState(6)
   const [pdfToImageFormat, setPdfToImageFormat] = useState<'png' | 'jpeg' | 'webp'>('png')
   const [pdfToImageQuality, setPdfToImageQuality] = useState(0.92)
+  const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL')
+  const [pdfPassword, setPdfPassword] = useState('')
 
   const estimatedCompressionRatio = useMemo(() => {
     if (compressPreset === 'maximum') return 0.3
@@ -239,6 +241,26 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
         } else if (tool.id === 'pdfToImage') {
           const engine = await import('../../tools/pdf/engine/pdfEngine')
           result = await engine.pdfToImages(primaryPdf.file, pdfToImageFormat, pdfToImageQuality, setProgress)
+        } else if (tool.id === 'watermark') {
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.watermarkPdfFile(primaryPdf.file, watermarkText, setProgress)
+        } else if (tool.id === 'pagenumber') {
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.addPageNumbersToPdf(primaryPdf.file, setProgress)
+        } else if (tool.id === 'protect') {
+          if (!pdfPassword) throw new Error('Please enter a password to protect the PDF.')
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.protectPdfFile(primaryPdf.file, pdfPassword, setProgress)
+        } else if (tool.id === 'unlock') {
+          if (!pdfPassword) throw new Error('Please enter the password to decrypt the PDF.')
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.unlockPdfFile(primaryPdf.file, pdfPassword, setProgress)
+        } else if (tool.id === 'extractImages') {
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.extractImagesFromPdf(primaryPdf.file, setProgress)
+        } else if (tool.id === 'extractText') {
+          const engine = await import('../../tools/pdf/engine/pdfEngine')
+          result = await engine.extractTextFromPdf(primaryPdf.file, setProgress)
         } else {
           const engine = await import('../../tools/pdf/engine/pdfEngine')
           result = await engine.pdfToImages(primaryPdf.file, pdfToImageFormat, pdfToImageQuality, setProgress)
@@ -262,9 +284,10 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
       // Google Drive sync
       const token = getGoogleToken()
       if (token) {
-        const isZip = (outputFileName || result.fileName).endsWith('.zip')
-        const category = isZip ? 'Word' : 'PDF'
-        await uploadFileToDrive(category, outputFileName || result.fileName, result.blob)
+        let driveCat: any = 'PDFs'
+        if (tool.id === 'merge') driveCat = 'Merged Files'
+        else if (tool.id === 'split' || tool.id === 'pdfToImage' || tool.id === 'extractImages' || tool.id === 'extractText') driveCat = 'Converted Files'
+        await uploadFileToDrive(driveCat, outputFileName || result.fileName, result.blob)
       }
 
       setFeedback('')
@@ -731,6 +754,59 @@ const PdfToolWorkspace = ({ tool }: PdfToolWorkspaceProps) => {
                       </select>
                     </label>
                   )}
+                </div>
+              )}
+
+              {tool.id === 'watermark' && primaryPdf && (
+                <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
+                  <label className="select-label" style={{ width: '100%' }}>
+                    Watermark Text
+                    <input
+                      className="pdf-text-input"
+                      value={watermarkText}
+                      onChange={(event) => setWatermarkText(event.target.value)}
+                      placeholder="e.g. CONFIDENTIAL"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {tool.id === 'pagenumber' && primaryPdf && (
+                <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
+                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                    Stamps "Page X of Y" at the bottom center of every page.
+                  </p>
+                </div>
+              )}
+
+              {(tool.id === 'protect' || tool.id === 'unlock') && primaryPdf && (
+                <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
+                  <label className="select-label" style={{ width: '100%' }}>
+                    Password
+                    <input
+                      type="password"
+                      className="pdf-text-input"
+                      value={pdfPassword}
+                      onChange={(event) => setPdfPassword(event.target.value)}
+                      placeholder="Enter security password"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {tool.id === 'extractImages' && primaryPdf && (
+                <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
+                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                    Scans document structures to extract and package embedded images into a ZIP folder.
+                  </p>
+                </div>
+              )}
+
+              {tool.id === 'extractText' && primaryPdf && (
+                <div className="pdf-option-panel" style={{ display: 'grid', gap: '1rem' }}>
+                  <p style={{ margin: 0, color: '#6B6459', fontSize: '0.85rem' }}>
+                    Scrapes character metadata from pages into a plain text (.txt) download.
+                  </p>
                 </div>
               )}
 

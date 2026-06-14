@@ -1,5 +1,5 @@
 import JSZip from 'jszip'
-import { PDFDocument, degrees } from 'pdf-lib'
+import { PDFDocument, degrees, rgb } from 'pdf-lib'
 import { StandardFonts } from 'pdf-lib'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
@@ -517,3 +517,265 @@ export const convertWordToPdf = async (
   // For DOC/DOCX we currently cannot guarantee fidelity in-browser
   throw new Error('DOC/DOCX conversion requires a server-side converter. Please upload to a server endpoint or use TXT/RTF for client-side conversion.')
 }
+
+export const watermarkPdfFile = async (
+  file: File,
+  text: string,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Loading PDF for watermarking', value: 20 })
+  const pdfDoc = await PDFDocument.load(await readAsArrayBuffer(file))
+  const pages = pdfDoc.getPages()
+  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  
+  onProgress?.({ label: 'Applying watermark to pages', value: 50 })
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i]
+    const { width, height } = page.getSize()
+    
+    // Draw text diagonally in the center of the page
+    page.drawText(text, {
+      x: width / 2 - 150,
+      y: height / 2 - 50,
+      size: 48,
+      font,
+      color: rgb(0.7, 0.7, 0.7),
+      opacity: 0.2,
+      rotate: degrees(45),
+    })
+  }
+
+  onProgress?.({ label: 'Saving watermarked PDF', value: 85 })
+  const bytes = await pdfDoc.save({ useObjectStreams: true })
+  return { blob: blobFromBytes(bytes, pdfMimeType), fileName: 'ShreeDesk_Watermarked.pdf' }
+}
+
+export const addPageNumbersToPdf = async (
+  file: File,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Loading PDF for pagination', value: 20 })
+  const pdfDoc = await PDFDocument.load(await readAsArrayBuffer(file))
+  const pages = pdfDoc.getPages()
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+  onProgress?.({ label: 'Stamping page numbers', value: 50 })
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i]
+    const { width } = page.getSize()
+    const pageNumText = `Page ${i + 1} of ${pages.length}`
+    const textWidth = font.widthOfTextAtSize(pageNumText, 10)
+    
+    page.drawText(pageNumText, {
+      x: width / 2 - textWidth / 2,
+      y: 25,
+      size: 10,
+      font,
+      color: rgb(0.3, 0.3, 0.3),
+    })
+  }
+
+  onProgress?.({ label: 'Saving paginated PDF', value: 85 })
+  const bytes = await pdfDoc.save({ useObjectStreams: true })
+  return { blob: blobFromBytes(bytes, pdfMimeType), fileName: 'ShreeDesk_Paginated.pdf' }
+}
+
+export const protectPdfFile = async (
+  file: File,
+  password: string,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Encrypting PDF security layers', value: 30 })
+  const buffer = await readAsArrayBuffer(file)
+  const encoder = new TextEncoder()
+  const keyMaterial = await window.crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  )
+  const salt = window.crypto.getRandomValues(new Uint8Array(16))
+  const key = await window.crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  )
+  
+  const iv = window.crypto.getRandomValues(new Uint8Array(12))
+  const encrypted = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: iv },
+    key,
+    buffer
+  )
+
+  const envelope = new Uint8Array(16 + 12 + encrypted.byteLength)
+  envelope.set(salt, 0)
+  envelope.set(iv, 16)
+  envelope.set(new Uint8Array(encrypted), 28)
+
+  onProgress?.({ label: 'Saving encrypted document', value: 90 })
+  return {
+    blob: blobFromBytes(envelope, pdfMimeType),
+    fileName: `ShreeDesk_Protected_${file.name}`
+  }
+}
+
+export const unlockPdfFile = async (
+  file: File,
+  password: string,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Decrypting PDF security layers', value: 30 })
+  const envelopeBytes = new Uint8Array(await readAsArrayBuffer(file))
+  
+  try {
+    const salt = envelopeBytes.slice(0, 16)
+    const iv = envelopeBytes.slice(16, 28)
+    const encrypted = envelopeBytes.slice(28)
+
+    const encoder = new TextEncoder()
+    const keyMaterial = await window.crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    )
+    const key = await window.crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    )
+
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encrypted
+    )
+
+    onProgress?.({ label: 'Document decrypted successfully', value: 90 })
+    return {
+      blob: blobFromBytes(new Uint8Array(decrypted), pdfMimeType),
+      fileName: file.name.replace('ShreeDesk_Protected_', '')
+    }
+  } catch (e) {
+    throw new Error('Invalid password. Failed to decrypt PDF.')
+  }
+}
+
+export const extractImagesFromPdf = async (
+  file: File,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Loading PDF for image asset scan', value: 15 })
+  const document = await getPdfDocument(file)
+  const pageCount = document.numPages
+  const zip = new JSZip()
+  let imageCount = 0
+
+  for (let i = 1; i <= pageCount; i++) {
+    onProgress?.({ label: `Scanning page ${i}/${pageCount} for images`, value: 15 + Math.round((i / pageCount) * 75) })
+    const page = await document.getPage(i)
+    const ops = await page.getOperatorList()
+    const { fnArray, argsArray } = ops
+    
+    for (let j = 0; j < fnArray.length; j++) {
+      const op = fnArray[j]
+      if (op === 85 || op === 82 || op === 86) {
+        const imgName = argsArray[j][0]
+        try {
+          const img = await new Promise<any>((resolve) => {
+            page.objs.get(imgName, (obj: any) => resolve(obj))
+          })
+          if (img && img.width && img.height) {
+            imageCount++
+            const canvas = window.document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              const imgData = ctx.createImageData(img.width, img.height)
+              if (img.data) {
+                const dataLen = img.data.length
+                const target = imgData.data
+                if (dataLen === img.width * img.height * 4) {
+                  target.set(img.data)
+                } else {
+                  let srcIdx = 0
+                  let destIdx = 0
+                  while (srcIdx < dataLen) {
+                    target[destIdx] = img.data[srcIdx]
+                    target[destIdx + 1] = img.data[srcIdx + 1]
+                    target[destIdx + 2] = img.data[srcIdx + 2]
+                    target[destIdx + 3] = 255
+                    srcIdx += 3
+                    destIdx += 4
+                  }
+                }
+                ctx.putImageData(imgData, 0, 0)
+                const blob = await canvasToBlob(canvas, 'image/png')
+                zip.file(`extracted_img_${imageCount}.png`, blob)
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to extract image object', imgName, e)
+        }
+      }
+    }
+  }
+
+  document.cleanup()
+
+  if (imageCount === 0) {
+    onProgress?.({ label: 'No raw image assets found, saving pages as images', value: 90 })
+    const document2 = await getPdfDocument(file)
+    for (let i = 1; i <= pageCount; i++) {
+      const pageCanvas = await renderPdfPageToCanvas(document2, i, 1.5)
+      const blob = await canvasToBlob(pageCanvas, 'image/png')
+      zip.file(`page_${i}.png`, blob)
+    }
+    document2.cleanup()
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob', mimeType: zipMimeType })
+  return { blob, fileName: 'ShreeDesk_Extracted_Images.zip' }
+}
+
+export const extractTextFromPdf = async (
+  file: File,
+  onProgress?: ProgressHandler,
+): Promise<PdfOutput> => {
+  onProgress?.({ label: 'Loading PDF for text extraction', value: 15 })
+  const document = await getPdfDocument(file)
+  const pageCount = document.numPages
+  let fullText = ''
+
+  for (let i = 1; i <= pageCount; i++) {
+    onProgress?.({ label: `Reading text from page ${i}/${pageCount}`, value: 15 + Math.round((i / pageCount) * 75) })
+    const page = await document.getPage(i)
+    const textContent = await page.getTextContent()
+    const pageText = textContent.items.map((item: any) => item.str).join(' ')
+    fullText += `--- Page ${i} ---\n${pageText}\n\n`
+  }
+
+  document.cleanup()
+  const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' })
+  return { blob, fileName: 'ShreeDesk_Extracted_Text.txt' }
+}
+

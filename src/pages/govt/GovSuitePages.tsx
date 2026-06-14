@@ -86,7 +86,7 @@ const GovSuitePages = () => {
       `\n\n\nUnder Secretary to Govt.\nNodal Desk`
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const fileName = `ShreeDesk_OfficeNote_${noteFileNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
-    const res = await uploadFileToDrive('Word', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 
@@ -108,7 +108,7 @@ const GovSuitePages = () => {
     const text = `${doEmblem} DEMI-OFFICIAL (D.O.) LETTERHEAD\n\nReference: ${doLetterNo || 'DRAFT'}\nDate: ${new Date().toLocaleDateString()}\n\nFrom:\n${doSenderName || '...'}\n${doDesignation || '...'}\n${doAddress || '...'}\n\nTo:\n${doRecipient || '...'}\n\nDear Recipient,\n\n${doBody || '...'}\n\nWith regards,\n\nYours sincerely,\n${doSenderName.split(' ')[0] || '...'}`
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const fileName = `ShreeDesk_DOLetter_${doLetterNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Draft'}.txt`
-    const res = await uploadFileToDrive('Word', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 
@@ -134,7 +134,7 @@ const GovSuitePages = () => {
       `\n\n3. Citizenship Status:\nI hereby declare that I am a citizen of India and entitled to seek this information.\n\n4. Fee Payment Details:\nPostal Order (IPO) of Rs. 10/- is attached with this application.\n\nDate: ${new Date().toLocaleDateString()}\nApplicant Signature`
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const fileName = `ShreeDesk_RTI_Application_${new Date().getTime()}.txt`
-    const res = await uploadFileToDrive('Word', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 
@@ -255,7 +255,7 @@ const GovSuitePages = () => {
     if (!censusResult) return
     const blob = new Blob([censusResult], { type: 'text/plain;charset=utf-8' })
     const fileName = 'ShreeDesk_census_analysis_report.txt'
-    const res = await uploadFileToDrive('Excel', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 

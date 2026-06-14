@@ -138,8 +138,20 @@ const createDriveFolder = async (token: string, name: string, parentId?: string)
   return data.id
 }
 
+export type DriveCategory = 
+  | 'PDFs'
+  | 'Notes'
+  | 'Word Documents'
+  | 'Excel Files'
+  | 'PowerPoints'
+  | 'Images'
+  | 'Reports'
+  | 'Merged Files'
+  | 'Converted Files'
+  | 'Backups'
+
 // Get or Create targeted directory structure in user Google Drive
-export const getOrCreateFolderTree = async (token: string, category: 'PDF' | 'Excel' | 'Word' | 'PPT'): Promise<string> => {
+export const getOrCreateFolderTree = async (token: string, category: DriveCategory): Promise<string> => {
   if (token.startsWith('mock-')) {
     return 'mock-folder-id-xyz'
   }
@@ -150,7 +162,7 @@ export const getOrCreateFolderTree = async (token: string, category: 'PDF' | 'Ex
     rootFolderId = await createDriveFolder(token, 'ShreeDeskOffice')
   }
 
-  // 2. Get or Create subfolder (e.g. PDF, Excel, Word, PPT)
+  // 2. Get or Create subfolder corresponding to the category
   let subFolderId = await findDriveItem(token, category, 'application/vnd.google-apps.folder', rootFolderId)
   if (!subFolderId) {
     subFolderId = await createDriveFolder(token, category, rootFolderId)
@@ -161,7 +173,7 @@ export const getOrCreateFolderTree = async (token: string, category: 'PDF' | 'Ex
 
 // Upload file to specific Google Drive Subfolder
 export const uploadFileToDrive = async (
-  category: 'PDF' | 'Excel' | 'Word' | 'PPT',
+  category: DriveCategory,
   fileName: string,
   fileBlob: Blob
 ): Promise<{ success: boolean; message: string }> => {

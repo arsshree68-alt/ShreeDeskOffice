@@ -293,7 +293,7 @@ const AiWorkspace = () => {
     if (!reportResult) return
     const blob = new Blob([reportResult], { type: 'text/plain;charset=utf-8' })
     const fileName = `ShreeDesk_AI_${reportType}.txt`
-    const res = await uploadFileToDrive('Word', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 
@@ -314,7 +314,7 @@ const AiWorkspace = () => {
     if (!contentResult) return
     const blob = new Blob([contentResult], { type: 'text/plain;charset=utf-8' })
     const fileName = `ShreeDesk_AI_${contentType}.txt`
-    const res = await uploadFileToDrive('Word', fileName, blob)
+    const res = await uploadFileToDrive('Reports', fileName, blob)
     alert(res.message)
   }
 

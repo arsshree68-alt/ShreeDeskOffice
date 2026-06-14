@@ -10,6 +10,12 @@ export type PdfToolId =
   | 'imageToPdf'
   | 'pdfToImage'
   | 'wordToPdf'
+  | 'watermark'
+  | 'pagenumber'
+  | 'protect'
+  | 'unlock'
+  | 'extractImages'
+  | 'extractText'
 
 export type PdfToolMode = 'pdf' | 'image'
 

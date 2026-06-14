@@ -86,7 +86,7 @@ export const downloadBlob = async (blob: Blob, fileName: string) => {
   const token = getGoogleToken()
   if (token) {
     try {
-      await uploadFileToDrive('Excel', safeName, blob)
+      await uploadFileToDrive('Excel Files', safeName, blob)
     } catch (err) {
       console.error('Error syncing Excel file to Google Drive', err)
     }
